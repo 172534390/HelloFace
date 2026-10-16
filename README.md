@@ -1,0 +1,30 @@
+# HelloFace
+
+English | [简体中文](README.zh-CN.md)
+
+**0.0.2 Beta**
+
+### Offline face detection, capture, liveness, 1:1 verification and 1:N/M:N search.
+
+![HelloFace](AboutHelloFace.png)
+
+| Platform | Requirements | Integration |
+|---|---|---|
+| Android | Android 6.0+ · ARM64/ARMv7 · JDK 17 · SDK 36 | [Demo](platforms/Android/README.md) · [SDK](platforms/Android/docs/SDK.md) |
+| iOS | iOS 15+ · Swift 6 · Xcode | [Demo](platforms/iOS/README.md) · [SDK](platforms/iOS/SDK/API.md) |
+| Harmony | HarmonyOS API 20+ · ARM64 · DevEco Studio 26 | [Demo](platforms/Harmony/README.md) · [SDK](platforms/Harmony/SDK.md) |
+| Linux | Ubuntu 22.04+ · x86_64/ARM64 · X11/XWayland | [Demo](platforms/Linux/README.md) · [SDK](platforms/Linux/runtimes/x86_64/sdk/README.md) |
+| Windows | Windows 10/11 x64 · CPU | [Demo](platforms/Windows/README.md) · [SDK](platforms/Windows/sdk/README.md) |
+
+**More platforms (planned):** WeChat Mini Programs, Chrome, uni-app, Flutter plugins, React Native (RN) plugins, and more.
+
+Beta expires **2026-12-24 09:08:42 (UTC+08:00)**. The current model does not support recognition of minors.
+Windows/Linux desktop and camera validation is pending. Configure your own application signing on mobile.
+
+[Releases](https://github.com/FaceSDKPro/HelloFace/releases) · [Android APK builds](https://github.com/FaceSDKPro/HelloFace/actions/workflows/android-demo.yml) · [Issues](https://github.com/FaceSDKPro/HelloFace/issues)
+
+Email: [FaceAISDK.Service@gmail.com](mailto:FaceAISDK.Service@gmail.com)
+
+WeChat contact:
+
+<img src="WeChat.jpg" alt="WeChat QR code" width="200">

@@ -1,0 +1,10 @@
+{
+  "app": {
+    "bundleName": "com.hiface.sdk.public",
+    "vendor": "HiFace",
+    "versionCode": 1000002,
+    "versionName": "0.0.2",
+    "icon": "$media:app_icon",
+    "label": "$string:app_name"
+  }
+}

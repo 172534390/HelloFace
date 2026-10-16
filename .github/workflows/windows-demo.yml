@@ -1,0 +1,39 @@
+name: Windows Demo
+on:
+  push:
+    branches: [main]
+    paths: ["platforms/Windows/**", ".github/workflows/windows-demo.yml"]
+  pull_request:
+    paths: ["platforms/Windows/**", ".github/workflows/windows-demo.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: windows-demo-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-2022
+    defaults:
+      run:
+        working-directory: platforms/Windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Build independent SDK consumers and Demo; run headless checks
+        run: ./build_demo.ps1
+      - name: Verify the original portable Demo without changing its binaries
+        run: |
+          $Destination = Join-Path $env:RUNNER_TEMP "HelloFace-Windows-demo"
+          Copy-Item -Recurse demo $Destination
+          & "$Destination/bin/hiface_cli.exe" self-test
+          if ($LASTEXITCODE -ne 0) { throw "Portable Demo self-test failed" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HelloFace-Windows-demo
+          path: ${{ runner.temp }}/HelloFace-Windows-demo
+          retention-days: 30
+          if-no-files-found: error

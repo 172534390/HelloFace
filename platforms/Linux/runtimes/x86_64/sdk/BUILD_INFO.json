@@ -1,0 +1,10 @@
+{
+  "version": "0.0.2",
+  "channel": "Beta",
+  "architecture": "x86_64",
+  "glibc_baseline": "2.35",
+  "cxx_runtime": "statically linked libc++/libc++abi/libunwind",
+  "feature_space_id": "hiface-feature-new-v1",
+  "trial_expiry_china": "2026-12-24 09:08:42",
+  "protected_resources": "built-in"
+}

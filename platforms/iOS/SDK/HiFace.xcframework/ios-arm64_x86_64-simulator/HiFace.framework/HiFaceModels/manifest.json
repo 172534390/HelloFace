@@ -1,0 +1,47 @@
+{
+  "format": "BPHFM1",
+  "payload_format": "HFM2",
+  "chunk_size": 262144,
+  "models": [
+    {
+      "model_id": "check",
+      "bundle": {
+        "file": "kcehc.bphfm",
+        "bytes": 1273257,
+        "sha256": "de78a0fc762b85773bac90a5dd6441cc5a219fcc6711ab645d8698483762873a"
+      }
+    },
+    {
+      "model_id": "feature",
+      "bundle": {
+        "file": "erutaef.bphfm",
+        "bytes": 2426264,
+        "sha256": "81bb7caa4e7566bdcf6ce5a5c18fbfdf5c100cb3186e07f486c9030d20654af3"
+      }
+    },
+    {
+      "model_id": "landmarks",
+      "bundle": {
+        "file": "skramdnal.bphfm",
+        "bytes": 1233455,
+        "sha256": "2a34c8a278cad6a81ad97211fcc94b4da8633f99390d00897d3f84bce89efe47"
+      }
+    },
+    {
+      "model_id": "silent_s",
+      "bundle": {
+        "file": "s_tnelis.bphfm",
+        "bytes": 885053,
+        "sha256": "a686515c38a8cd77cc037dc9134b15b3af1064bcf3951d7d9961e2d97d9ca938"
+      }
+    },
+    {
+      "model_id": "silent_m",
+      "bundle": {
+        "file": "m_tnelis.bphfm",
+        "bytes": 884478,
+        "sha256": "33bc25702d61f15c92005a055a5a2fdaf3117b40575f3651ba1f51705d08b0cc"
+      }
+    }
+  ]
+}
