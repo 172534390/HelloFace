@@ -2,9 +2,11 @@
 
 ## Installation
 
-The current model does not support recognition of minors.
+The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
 
-Beta expires at **2026-12-24 09:08:42 (UTC+08:00)**. Upgrade before expiry. [Updates](https://github.com/FaceSDKPro/).
+Beta expires at **2027-02-15 12:00:00 (UTC+08:00)**. Upgrade before expiry. [Updates](https://github.com/FaceSDKPro/).
+
+Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 
 | Requirement | Supported |
 |---|---|
@@ -15,10 +17,10 @@ Beta expires at **2026-12-24 09:08:42 (UTC+08:00)**. Upgrade before expiry. [Upd
 For direct delivery, copy the versioned HAR into the application and configure the module's `oh-package.json5`:
 
 ```json5
-{ "dependencies": { "hiface": "file:./libs/hiface-0.0.2.har" } }
+{ "dependencies": { "hiface": "file:./libs/hiface-0.0.3.har" } }
 ```
 
-After the same version is approved in the OpenHarmony package registry, use `ohpm install hiface@0.0.2`. Direct and registry delivery must use the same version and HAR SHA-256. Never replace an artifact already delivered under a version number. Sign the host HAP/APP with your own credentials; SDK HARs do not include Demo signing files or private keys.
+After the same version is approved in the OpenHarmony package registry, use `ohpm install hiface@0.0.3`. Direct and registry delivery must use the same version and HAR SHA-256. Never replace an artifact already delivered under a version number. Sign the host HAP/APP with your own credentials; SDK HARs do not include Demo signing files or private keys.
 
 ## Initialization and ownership
 

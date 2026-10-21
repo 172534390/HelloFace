@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     project(HiFaceWindowsDemo LANGUAGES C CXX RC)
-    find_package(HiFace 0.0.2 CONFIG REQUIRED COMPONENTS C)
+    find_package(HiFace 0.0.3 CONFIG REQUIRED COMPONENTS C)
     # Demo-owned integration sample. The SDK itself ships no implementation sources.
     set(HIFACE_CPP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/integration/include")
     add_subdirectory(integration)

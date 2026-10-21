@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(HiFaceSDKExample LANGUAGES C CXX)
-find_package(HiFace 0.0.2 CONFIG REQUIRED COMPONENTS C)
+find_package(HiFace 0.0.3 CONFIG REQUIRED COMPONENTS C)
 add_executable(hiface_c_consumer c_consumer.c)
 target_link_libraries(hiface_c_consumer PRIVATE HiFace::HiFace)
 add_executable(hiface_cpp_consumer cpp_consumer.cpp)

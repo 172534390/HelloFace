@@ -1,10 +1,10 @@
 {
-  "version": "0.0.2",
+  "version": "0.0.3",
   "status": "beta-candidate",
   "architecture": "x64",
   "runtimeExpiry": {
-    "expiresAtUnixSeconds": 1798074522,
-    "expiresAt": "2026-12-24T09:08:42+08:00",
+    "expiresAtUnixSeconds": 1802664000,
+    "expiresAt": "2027-02-15T12:00:00+08:00",
     "timeZone": "Asia/Shanghai"
   },
   "windowsExecutionAcceptance": "pending",
@@ -12,6 +12,6 @@
   "uiInteractionAcceptance": "pending",
   "sampleData": "ai-generated-faces",
   "packageRole": "demo",
-  "candidateId": "0.0.2-beta.837be1e95394",
+  "candidateId": "0.0.3-beta.11b9b0d2d87c",
   "authenticode": "unsigned"
 }

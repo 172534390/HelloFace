@@ -3,7 +3,7 @@
   "component": {
     "group": "io.github.facesdkpro",
     "module": "hiface-android",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -40,8 +40,8 @@
       ],
       "files": [
         {
-          "name": "hiface-android-0.0.2.aar",
-          "url": "hiface-android-0.0.2.aar",
+          "name": "hiface-android-0.0.3.aar",
+          "url": "hiface-android-0.0.3.aar",
           "size": 11247340,
           "sha512": "819f8f475084e8828d447bc3b569ab90e907f6af4bbb54d7cde883d09f1c3849dbd30bead4bf56e47d0f9266696a112882e85b760d675e15a8edcc73ed8ffb2a",
           "sha256": "a556d107bd942613aa606f6f08df655851e112666af05d41a35983c37e824169",
@@ -76,8 +76,8 @@
       ],
       "files": [
         {
-          "name": "hiface-android-0.0.2.aar",
-          "url": "hiface-android-0.0.2.aar",
+          "name": "hiface-android-0.0.3.aar",
+          "url": "hiface-android-0.0.3.aar",
           "size": 11247340,
           "sha512": "819f8f475084e8828d447bc3b569ab90e907f6af4bbb54d7cde883d09f1c3849dbd30bead4bf56e47d0f9266696a112882e85b760d675e15a8edcc73ed8ffb2a",
           "sha256": "a556d107bd942613aa606f6f08df655851e112666af05d41a35983c37e824169",

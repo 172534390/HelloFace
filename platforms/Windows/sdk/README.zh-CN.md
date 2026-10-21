@@ -1,4 +1,4 @@
-# HiFace Windows SDK · 0.0.2 Beta
+# HiFace Windows SDK · 0.0.3 Beta
 
 [English](README.md) | 简体中文
 
@@ -21,7 +21,7 @@ cmake --build build --config Release
 自己的 CMake 工程：
 
 ```cmake
-find_package(HiFace 0.0.2 CONFIG REQUIRED COMPONENTS C)
+find_package(HiFace 0.0.3 CONFIG REQUIRED COMPONENTS C)
 target_link_libraries(your_app PRIVATE HiFace::HiFace)
 ```
 
@@ -50,5 +50,6 @@ target_link_libraries(your_app PRIVATE HiFace::HiFace)
 
 应用层用法见独立 Demo 的 `source/` 与 `source/integration/`。
 找不到 DLL / `0xc000007b`：检查 x64 `hiface.dll`；初始化失败：检查状态、日志和 `sdk-metadata.json` 中的试用期限。
-相机由应用打开和送帧。测试授权见 [LICENSE](LICENSE)，当前模型暂不支持未成年人。
+相机由应用打开和送帧。测试授权见 [LICENSE](LICENSE)。当前模型不支持14周岁以下儿童人脸识别，不能用于金融相关场景。
+人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
 [反馈问题](https://github.com/FaceSDKPro/HelloFace/issues)时附版本、状态码和脱敏日志。

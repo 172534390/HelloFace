@@ -4,9 +4,11 @@
 
 将 Demo 的 `maven-repository/` 复制到自己的工程。
 
-当前模型不支持未成年人识别。
+当前模型不支持14周岁以下儿童人脸识别，不能用于金融相关场景。
 
-Beta 于 **2026-12-24 09:08:42（北京时间）** 到期。
+Beta 于 **2027-02-15 12:00:00（北京时间）** 到期。
+
+人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
 
 | 项目 | 当前范围 |
 |---|---|
@@ -14,7 +16,7 @@ Beta 于 **2026-12-24 09:08:42（北京时间）** 到期。
 | ABI | `arm64-v8a`、`armeabi-v7a` |
 | 入口 | Java `com.hiface.sdk.HiFaceSdk` |
 
-候选版本为 `0.0.2`，正式上线状态以发布记录为准：
+候选版本为 `0.0.3`，正式上线状态以发布记录为准：
 
 ```kotlin
 repositories {
@@ -23,7 +25,7 @@ repositories {
     mavenCentral()
 }
 dependencies {
-    implementation("io.github.facesdkpro:hiface-android:0.0.2")
+    implementation("io.github.facesdkpro:hiface-android:0.0.3")
 }
 android {
     androidResources { noCompress += "bphfm" }

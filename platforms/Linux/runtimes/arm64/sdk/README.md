@@ -2,9 +2,10 @@
 
 English | [简体中文](README.zh-CN.md)
 
-**0.0.2 Beta** · x86_64 / ARM64 · CPU · C ABI v1.
+**0.0.3 Beta** · x86_64 / ARM64 · CPU · C ABI v1.
 Ubuntu 22.04 / glibc 2.35 baseline; Ubuntu 24.04 is a compatibility target.
-Beta expires **2026-12-24 09:08:42 (UTC+08:00)**. Current models do not support recognition of minors. Target-device acceptance is pending.
+Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios. Target-device acceptance is pending.
+Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 
 ## Integrate
 

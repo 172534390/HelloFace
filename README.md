@@ -2,7 +2,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
-**0.0.2 Beta**
+**0.0.3 Beta**
 
 ### Offline face detection, capture, liveness, 1:1 verification and 1:N/M:N search.
 
@@ -18,7 +18,8 @@ English | [简体中文](README.zh-CN.md)
 
 **More platforms (planned):** WeChat Mini Programs, Chrome, uni-app, Flutter plugins, React Native (RN) plugins, and more.
 
-Beta expires **2026-12-24 09:08:42 (UTC+08:00)**. The current model does not support recognition of minors.
+Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
+Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 Windows/Linux desktop and camera validation is pending. Configure your own application signing on mobile.
 
 [Releases](https://github.com/FaceSDKPro/HelloFace/releases) · [Android APK builds](https://github.com/FaceSDKPro/HelloFace/actions/workflows/android-demo.yml) · [Issues](https://github.com/FaceSDKPro/HelloFace/issues)

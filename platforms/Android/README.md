@@ -1,4 +1,4 @@
-# HiFace Android · 0.0.2 Beta
+# HiFace Android · 0.0.3 Beta
 
 English | [简体中文](README.zh-CN.md)
 
@@ -21,4 +21,5 @@ Copy `maven-repository/` into your project. Follow the [SDK guide](docs/SDK.md) 
 Examples: [camera](demo/src/main/java/com/hiface/sdk/demo/camera/CameraPreviewFragment.java) · [search](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchActivity.java) · [face library](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchLibraryActivity.java).
 Demo data is in `demo/src/main/assets/face_search/`; image downloads require internet. The 1:1 reference uses MMKV: replace the demo key. HF1 and the SDK face database are unencrypted.
 
-Beta expires **2026-12-24 09:08:42 (UTC+08:00)**; recognition of minors is unsupported.
+Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
+Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.

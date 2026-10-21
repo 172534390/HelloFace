@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-**0.0.2 Beta**
+**0.0.3 Beta**
 
 ### 离线人脸检测、采集、活体、1:1 比对及 1:N/M:N 搜索。
 
@@ -18,7 +18,8 @@
 
 **更多平台（计划）：** 将支持微信小程序、Chrome、uni-app、Flutter 插件、React Native（RN）插件等。
 
-Beta 截止 **2026-12-24 09:08:42（北京时间）**。当前模型不支持未成年人识别。
+Beta 截止 **2027-02-15 12:00:00（北京时间）**。当前模型不支持14周岁以下儿童人脸识别，不能用于金融相关场景。
+人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
 Windows/Linux 桌面与摄像头尚待真机验证；移动端运行需配置自己的应用签名。
 
 [版本下载](https://github.com/FaceSDKPro/HelloFace/releases) · [Android APK 构建](https://github.com/FaceSDKPro/HelloFace/actions/workflows/android-demo.yml) · [问题反馈](https://github.com/FaceSDKPro/HelloFace/issues)

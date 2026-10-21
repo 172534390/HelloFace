@@ -1,8 +1,9 @@
-# HiFace Windows · 0.0.2 Beta
+# HiFace Windows · 0.0.3 Beta
 
 English | [简体中文](README.zh-CN.md)
 
-Windows 10/11 x64, Intel/AMD CPU. Trial expires **2026-12-24T09:08:42+08:00**.
+Windows 10/11 x64, Intel/AMD CPU. Trial expires **2027-02-15T12:00:00+08:00**.
+The current model does not support face recognition for people under 14 and must not be used in financial scenarios. Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 
 - [SDK integration](sdk/README.md): public C API, `hiface.dll`, CMake and C/C++ examples.
 - [Demo](demo/README.md): executable, application source and AI-generated sample data.

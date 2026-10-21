@@ -1,4 +1,4 @@
-# HiFace Windows SDK · 0.0.2 Beta
+# HiFace Windows SDK · 0.0.3 Beta
 
 English | [简体中文](README.zh-CN.md)
 
@@ -22,7 +22,7 @@ cmake --build build --config Release
 In your CMake project:
 
 ```cmake
-find_package(HiFace 0.0.2 CONFIG REQUIRED COMPONENTS C)
+find_package(HiFace 0.0.3 CONFIG REQUIRED COMPONENTS C)
 target_link_libraries(your_app PRIVATE HiFace::HiFace)
 ```
 
@@ -51,5 +51,6 @@ and use SDK functions to release SDK-owned results. HF1 and databases are unencr
 For application examples, see the separate Demo's `source/` and `source/integration/`.
 Missing DLL / `0xc000007b`: check the x64 `hiface.dll`. Initialization failure: check status, logs
 and the trial expiry in `sdk-metadata.json`. The SDK does not open cameras.
-Trial terms: [LICENSE](LICENSE). Current models do not support minors.
+Trial terms: [LICENSE](LICENSE). The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
+Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 [Report issues](https://github.com/FaceSDKPro/HelloFace/issues) with version, status code and sanitized logs.

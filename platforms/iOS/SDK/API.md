@@ -1,12 +1,14 @@
-# HiFace 0.0.2 API Guide
+# HiFace 0.0.3 API Guide
 
 English | [简体中文](API.zh-CN.md)
 
 ## Installation
 
-The current model does not support recognition of minors.
+The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
 
-Beta expires at **2026-12-24 09:08:42 (UTC+08:00)**. Upgrade before expiry. [Updates](https://github.com/FaceSDKPro/).
+Beta expires at **2027-02-15 12:00:00 (UTC+08:00)**. Upgrade before expiry. [Updates](https://github.com/FaceSDKPro/).
+
+Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 
 | Requirement | Supported |
 |---|---|
