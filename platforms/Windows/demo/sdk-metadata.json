@@ -2,11 +2,6 @@
   "version": "0.0.3",
   "status": "beta-candidate",
   "architecture": "x64",
-  "runtimeExpiry": {
-    "expiresAtUnixSeconds": 1802664000,
-    "expiresAt": "2027-02-15T12:00:00+08:00",
-    "timeZone": "Asia/Shanghai"
-  },
   "windowsExecutionAcceptance": "pending",
   "cameraDeviceAcceptance": "pending",
   "uiInteractionAcceptance": "pending",

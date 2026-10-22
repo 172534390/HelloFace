@@ -15,10 +15,11 @@
 | Harmony | HarmonyOS API 20+ · ARM64 · DevEco Studio 26 | [Demo](platforms/Harmony/README.zh-CN.md) · [SDK](platforms/Harmony/SDK.zh-CN.md) |
 | Linux | Ubuntu 22.04+ · x86_64/ARM64 · X11/XWayland | [Demo](platforms/Linux/README.zh-CN.md) · [SDK](platforms/Linux/runtimes/x86_64/sdk/README.zh-CN.md) |
 | Windows | Windows 10/11 x64 · CPU | [Demo](platforms/Windows/README.zh-CN.md) · [SDK](platforms/Windows/sdk/README.zh-CN.md) |
+| Web 人脸录入 | 浏览器 | [在线体验](https://hiface-mdp.pages.dev/face/) |
 
 **更多平台（计划）：** 将支持微信小程序、Chrome、uni-app、Flutter 插件、React Native（RN）插件等。
 
-Beta 截止 **2027-02-15 12:00:00（北京时间）**。当前模型不支持14周岁以下儿童人脸识别，不能用于金融相关场景。
+SDK正在Beta 迭代公测中，请及时升级SDK版本。当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
 人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
 Windows/Linux 桌面与摄像头尚待真机验证；移动端运行需配置自己的应用签名。
 

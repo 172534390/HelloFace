@@ -5,6 +5,5 @@
   "glibc_baseline": "2.35",
   "cxx_runtime": "statically linked libc++/libc++abi/libunwind",
   "feature_space_id": "hiface-feature-new-v1",
-  "trial_expiry_china": "2027-02-15 12:00:00",
   "protected_resources": "built-in"
 }

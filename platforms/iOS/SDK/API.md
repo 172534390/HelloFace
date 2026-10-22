@@ -4,9 +4,9 @@ English | [简体中文](API.zh-CN.md)
 
 ## Installation
 
-The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
+The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
 
-Beta expires at **2027-02-15 12:00:00 (UTC+08:00)**. Upgrade before expiry. [Updates](https://github.com/FaceSDKPro/).
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).
 
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 

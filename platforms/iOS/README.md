@@ -15,5 +15,5 @@ Use `HiFaceSDK()` with default configuration and add `NSCameraUsageDescription` 
 Examples: [camera](HiFaceDemo/Camera/CameraPipeline.swift) · [flows](HiFaceDemo/Camera/CameraDemoModel.swift) · [face library](HiFaceDemo/Search/SearchLibraryView.swift).
 Demo data: `HiFaceDemo/Resources/FaceSearch/`; image downloads require internet. The 1:1 reference uses Keychain. HF1 and the SDK face database are unencrypted.
 
-Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios. Validate camera features on iPhone.
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios. Validate camera features on iPhone.
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.

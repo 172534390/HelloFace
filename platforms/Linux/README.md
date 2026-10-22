@@ -3,7 +3,7 @@
 English | [简体中文](README.zh-CN.md)
 
 SDK **Beta**, x86_64 / ARM64, CPU. Ubuntu 22.04+ (glibc 2.35+); desktop requires X11 or XWayland.
-Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios. Target-device acceptance is pending.
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios. Target-device acceptance is pending.
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 
 ## Run

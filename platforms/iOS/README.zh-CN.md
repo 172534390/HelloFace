@@ -15,5 +15,5 @@ iOS 15+，Swift 6。
 示例：[相机](HiFaceDemo/Camera/CameraPipeline.swift) · [业务流程](HiFaceDemo/Camera/CameraDemoModel.swift) · [人脸库](HiFaceDemo/Search/SearchLibraryView.swift)。
 `HiFaceDemo/Resources/FaceSearch/` 为演示数据；网络图片导入需联网。1:1 基准使用 Keychain；HF1 和 SDK 人脸库未加密。
 
-Beta 截止 **2027-02-15 12:00:00（北京时间）**；当前模型不支持14周岁以下儿童人脸识别，不能用于金融相关场景。相机功能请在 iPhone 验证。
+SDK正在Beta 迭代公测中，请及时升级SDK版本。当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。相机功能请在 iPhone 验证。
 人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。

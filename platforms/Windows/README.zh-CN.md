@@ -2,8 +2,8 @@
 
 [English](README.md) | 简体中文
 
-支持 Windows 10/11 x64、Intel/AMD CPU。试用截止 **2027-02-15T12:00:00+08:00**。
-当前模型不支持14周岁以下儿童人脸识别，不能用于金融相关场景。人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+支持 Windows 10/11 x64、Intel/AMD CPU。SDK正在Beta 迭代公测中，请及时升级SDK版本。
+当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
 
 - [SDK 接入](sdk/README.zh-CN.md)：公共 C API、`hiface.dll`、CMake 和 C/C++ 示例。
 - [Demo 使用](demo/README.md)：可执行程序、应用源码和 AI 合成人脸演示数据。
@@ -22,4 +22,4 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./build_demo.ps1
 ```
 
 修改 `demo/source/` 后重新编译，程序位于 `build/demo/bin/Release/hiface_demo.exe`。
-分发条款见 [LICENSE](sdk/LICENSE)；界面与相机请在目标设备验证。
+界面与相机请在目标设备验证。

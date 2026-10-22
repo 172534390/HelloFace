@@ -21,5 +21,5 @@ Copy `maven-repository/` into your project. Follow the [SDK guide](docs/SDK.md) 
 Examples: [camera](demo/src/main/java/com/hiface/sdk/demo/camera/CameraPreviewFragment.java) · [search](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchActivity.java) · [face library](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchLibraryActivity.java).
 Demo data is in `demo/src/main/assets/face_search/`; image downloads require internet. The 1:1 reference uses MMKV: replace the demo key. HF1 and the SDK face database are unencrypted.
 
-Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.

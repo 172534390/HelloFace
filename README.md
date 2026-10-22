@@ -15,10 +15,11 @@ English | [简体中文](README.zh-CN.md)
 | Harmony | HarmonyOS API 20+ · ARM64 · DevEco Studio 26 | [Demo](platforms/Harmony/README.md) · [SDK](platforms/Harmony/SDK.md) |
 | Linux | Ubuntu 22.04+ · x86_64/ARM64 · X11/XWayland | [Demo](platforms/Linux/README.md) · [SDK](platforms/Linux/runtimes/x86_64/sdk/README.md) |
 | Windows | Windows 10/11 x64 · CPU | [Demo](platforms/Windows/README.md) · [SDK](platforms/Windows/sdk/README.md) |
+| Web Face Enrollment | Browser | [Try online](https://hiface-mdp.pages.dev/face/) |
 
 **More platforms (planned):** WeChat Mini Programs, Chrome, uni-app, Flutter plugins, React Native (RN) plugins, and more.
 
-Beta expires **2027-02-15 12:00:00 (UTC+08:00)**. The current model does not support face recognition for people under 14 and must not be used in financial scenarios.
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 Windows/Linux desktop and camera validation is pending. Configure your own application signing on mobile.
 
