@@ -19,9 +19,10 @@
 
 **更多平台（计划）：** 将支持微信小程序、Chrome、uni-app、Flutter 插件、React Native（RN）插件等。
 
-SDK正在Beta 迭代公测中，请及时升级SDK版本。当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
-人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
-Windows/Linux 桌面与摄像头尚待真机验证；移动端运行需配置自己的应用签名。
+- SDK正在Beta 迭代公测中，请及时升级SDK版本。
+- 当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
+- 人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+- Windows/Linux 桌面与摄像头待真机摄像头验证；移动端运行需配置自己的应用签名。
 
 [版本下载](https://github.com/FaceSDKPro/HelloFace/releases) · [Android APK 构建](https://github.com/FaceSDKPro/HelloFace/actions/workflows/android-demo.yml) · [问题反馈](https://github.com/FaceSDKPro/HelloFace/issues)
 
