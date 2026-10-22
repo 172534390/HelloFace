@@ -2,7 +2,11 @@ package com.hiface.sdk.demo.ui;
 
 import java.util.Locale;
 
-/** Demo 按系统地区选语言；SDK 的日志和错误消息不参与本地化。 */
+/**
+ * The Demo selects language from the system locale; SDK logs and error messages are not localized.
+ *
+ * Demo 按系统地区选语言；SDK 的日志和错误消息不参与本地化。
+ */
 public final class DemoLanguage {
     private DemoLanguage() {}
 

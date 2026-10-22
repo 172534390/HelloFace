@@ -35,7 +35,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-/** Device regression with SDK-owned models and local, untracked PNG/I420 fixtures. */
+/**
+ * Device regression with SDK-owned models and local, untracked PNG/I420 fixtures.
+ *
+ * 使用 SDK 自带模型和本地未跟踪的 PNG/I420 测试夹具执行设备回归。
+ */
 @RunWith(AndroidJUnit4.class)
 public final class FeaturePipelineInstrumentedTest {
     @Test public void staticExtractionGalleryAndFrameSearchUseTheSameFeatureSpace() throws Exception {
@@ -95,7 +99,7 @@ public final class FeaturePipelineInstrumentedTest {
             try {
                 new FaceSearchFeatureEntry("legacy", first.getFeature(), 0, "", "", "hiface-feature-new-v1");
                 fail("Old feature space must be rejected");
-            } catch (IllegalArgumentException expected) { /* Required rejection. */ }
+            } catch (IllegalArgumentException expected) { /* Required rejection. / 此处必须拒绝。 */ }
             database.close();
             database = HiFaceSdk.openSearchDatabase(isolated).requireValue();
             assertEquals(first.getFeature(), database.get("0").requireValue().getFeature());

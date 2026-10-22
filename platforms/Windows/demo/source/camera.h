@@ -16,6 +16,7 @@ public:
     Camera& operator=(const Camera&) = delete;
     // At most one pending frame; false means a bounded wait elapsed. Device
     // errors throw, allowing the worker to close the source and release SDK.
+    // 最多保留一帧待处理数据；false 表示有界等待超时。设备错误抛出异常，由工作线程关闭相机源并释放 SDK。
     bool next(CameraFrame& frame, std::chrono::milliseconds timeout);
     uint64_t capturedFrames() const;
 private:

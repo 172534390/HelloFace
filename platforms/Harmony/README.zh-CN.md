@@ -1,18 +1,29 @@
-# HiFace HarmonyOS · 0.0.3 Beta
+# HiFace HarmonyOS 集成 Demo
 
 [English](README.md) | 简体中文
 
-HarmonyOS API 20+，ARM64，DevEco Studio 26。
+SDK：**0.0.4 Beta**
 
-1. 打开本目录并同步依赖。
-2. 配置自己的 Bundle Name、签名和设备 Profile，在手机运行 `demo`。
+支持检测、采集、活体、1:1 比对、1:N/M:N 搜索和人脸库管理，算法在设备端运行。
 
-## 接入
+**模型适用范围：当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。**
 
-将 `libs/hiface-0.0.3.har` 添加为本地依赖；使用前等待 `whenReady()`。接口见 [SDK 指南](SDK.zh-CN.md)。
+## 运行
 
-示例：[相机](demo/src/main/ets/camera/CameraPreviewController.ets) · [业务流程](demo/src/main/ets/pages/RealtimeCameraDemo.ets) · [人脸库](demo/src/main/ets/search/FaceSearchLibraryDemo.ets)。
-`demo/src/main/resources/rawfile/face_search/` 为演示数据；网络图片导入需联网。1:1 基准使用 HUKS 加密保存；HF1 和 SDK 人脸库未加密。
+1. 用 DevEco Studio 26 打开本目录并同步依赖。
+2. 配置自己的 Bundle Name、签名证书和设备 Profile。
+3. 在 API 20+ 的 arm64 手机运行 `demo`。未签名 HAP 无法安装到手机。
 
-SDK正在Beta 迭代公测中，请及时升级SDK版本。当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
-人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+## 工程
+
+| 目录 | 用途 |
+|---|---|
+| `demo/` | 可修改的 ArkTS 示例 |
+| `libs/hiface-0.0.4.har` | SDK 二进制 |
+| `AppScope/`、`hvigor/` | 应用信息和构建配置，需保留 |
+
+模型已内置于 HAR，使用前等待 `whenReady()`。
+
+接入说明：[SDK](SDK.zh-CN.md) · [Demo](demo/README.zh-CN.md)。
+
+SDK正在Beta 迭代公测中，请及时升级SDK版本。[更新说明](https://github.com/FaceSDKPro/)。

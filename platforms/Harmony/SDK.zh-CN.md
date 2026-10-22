@@ -2,11 +2,11 @@
 
 ## 支持与安装
 
-当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
-
-SDK正在Beta 迭代公测中，请及时升级SDK版本。
+**模型适用范围：当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。**
 
 人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+
+SDK正在Beta 迭代公测中，请及时升级SDK版本。
 
 | 项目 | 当前范围 |
 |---|---|
@@ -14,13 +14,13 @@ SDK正在Beta 迭代公测中，请及时升级SDK版本。
 | ABI | `arm64-v8a` |
 | 入口 | ArkTS `HiFaceSdk` |
 
-直接交付时，把版本化 HAR 复制到应用（例如 `libs/hiface-0.0.3.har`），在模块
+直接交付时，把版本化 HAR 复制到应用（例如 `libs/hiface-0.0.4.har`），在模块
 `oh-package.json5` 中声明：
 
 ```json5
 {
   "dependencies": {
-    "hiface": "file:./libs/hiface-0.0.3.har"
+    "hiface": "file:./libs/hiface-0.0.4.har"
   }
 }
 ```
@@ -28,10 +28,10 @@ SDK正在Beta 迭代公测中，请及时升级SDK版本。
 同一版本通过 OpenHarmony 三方库中心仓审核后，可执行：
 
 ```shell
-ohpm install hiface@0.0.3
+ohpm install hiface@0.0.4
 ```
 
-也可以在 `oh-package.json5` 中声明 `"hiface": "0.0.3"`。直接交付和中心仓应使用同一版本、
+也可以在 `oh-package.json5` 中声明 `"hiface": "0.0.4"`。直接交付和中心仓应使用同一版本、
 同一 SHA-256 的 HAR，不能覆盖已经交付的版本。
 
 ## 初始化与错误处理
@@ -145,7 +145,13 @@ Native 停止失败时应关闭并重新创建 SDK。
 SDK 创建的 SQLite 数据库当前不提供包内加密。人脸特征和搜索库属于生物识别数据，接入方负责采集授权、
 访问控制、加密存储、保留期限、删除和备份策略。
 
+## 许可与发布文件
 
+- `LICENSE`：HiFace SDK 与模型商业许可说明，商业使用需要书面授权。
+- `CHANGELOG.md`：当前版本的公开变化。
+
+客户交付时应同时提供版本号和 `SHA256SUMS`。宿主 HAP/APP 使用接入方自己的签名；HAR 不应携带 Demo、
+客户签名文件或私钥。
 ## 图片多人搜索
 
 调用 `await sdk.capture().facesFromRgba(image)`。 返回最多 10 个 `FaceImageCapture`，每张脸保留原图坐标与独立的采集结果或错误。
@@ -154,3 +160,24 @@ SDK 创建的 SQLite 数据库当前不提供包内加密。人脸特征和搜�
 
 Demo 首页提供“图片人脸搜索识别”：相册选图、原图标框、身份与分数、矫正缩略图和人数汇总。
 默认全库 Top-1 / 0.80，不执行活体；图片搜索在 SDK 的 4096px 上限内保留原图尺寸，仅超限时等比缩小，奇数末边裁去 1px。人脸尺寸门槛按实际输入计算，图片比对和批量导入保留原有解码上限。
+
+## 红外单模态活体
+
+FLIR 接收已归正、未镜像的真实近红外 GRAY8 数据，宽高 1..4096，支持奇数尺寸和行填充。
+宿主提供该 IR 图像中的人脸框（左上角加宽高，至少 10×10）；IR 相机访问、人脸检测、补光和多人门禁
+由宿主负责。RGB 转灰度不能代替 IR 摄像头输入。
+
+```typescript
+const frame = new InfraredFrame(grayBuffer, width, height, rowStride,
+  faceX, faceY, faceWidth, faceHeight);
+const result = await sdk.liveness().evaluateInfrared(frame, calibratedThreshold);
+```
+
+`calibratedThreshold` 必须用目标 IR 摄像头标定，使用 Float32 真人阈值。
+`realScore` 越高越可能是真人，`spoofScore=1-realScore`，`realScore >= threshold` 才通过。
+先检查技术错误再读结果。Android 在工作线程同步调用，iOS/鸿蒙使用有界后台队列，输入由 SDK
+持有或复制。此入口不改变既有 RGB 相机活体或搜索流程；iOS 接入前需确认可取得 IR 图像，SDK
+不负责读取 Face ID 内部红外流。
+
+FLIR 官方公布的 99.8% 拦截率 / 97.6% 真人通过率来自私有评测集，不是本 SDK 的目标设备实测；
+强光、3D 头模为已知限制。分发时保留 SDK 许可中的 FLIR MIT 声明，HiFace 自身许可独立。

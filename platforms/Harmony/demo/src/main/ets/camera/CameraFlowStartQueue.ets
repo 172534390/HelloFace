@@ -1,4 +1,9 @@
-/** 跨页面串行启动 SDK 相机业务；旧请求返回句柄并完成取消后，才允许下一页启动。 */
+/**
+ * Serialize SDK camera starts across screens; allow the next start only after the old request returns
+ * its handle and cancellation completes.
+ *
+ * 跨页面串行启动 SDK 相机业务；旧请求返回句柄并完成取消后，才允许下一页启动。
+ */
 export class CameraFlowStartQueue {
   private static tail: Promise<void> = Promise.resolve();
 

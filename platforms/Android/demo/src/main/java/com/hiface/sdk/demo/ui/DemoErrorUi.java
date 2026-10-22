@@ -10,7 +10,11 @@ import com.hiface.sdk.common.HiFaceError;
 import com.hiface.sdk.common.HiFaceErrorCode;
 import com.hiface.sdk.demo.R;
 
-/** 将 SDK 稳定错误码映射为 Demo 的本地化文案和恢复策略。 */
+/**
+ * Map stable SDK error codes to localized Demo messages and recovery policies.
+ *
+ * 将 SDK 稳定错误码映射为 Demo 的本地化文案和恢复策略。
+ */
 public final class DemoErrorUi {
     private static final String TAG = "HiFaceDemo";
 
@@ -22,7 +26,12 @@ public final class DemoErrorUi {
         return context.getString(messageResource(error.getCode()));
     }
 
-    /** 配置、能力和模型错误需要先修复原因，不向用户提供无效重试。 */
+    /**
+     * Configuration, capability, and model errors require fixing the cause first; do not offer ineffective
+     * retries.
+     *
+     * 配置、能力和模型错误需要先修复原因，不向用户提供无效重试。
+     */
     public static boolean isRetryable(@NonNull HiFaceError error) {
         switch (error.getCode()) {
             case NOT_READY:

@@ -274,6 +274,7 @@ HIFACE_API void HIFACE_CALL hiface_session_destroy_v1(HiFaceSessionHandle sessio
  * enable_feature / enable_landmark 决定这个 session 可加载哪些能力：关闭的能力不分配
  * 后端对象，也不接受对应模型。基础就绪只要求 check；landmarks、feature 和
  * silent_s/silent_m 可在业务需要时延迟推入（见 hiface_session_load_model_bundle_v1）。
+ * infrared 为独立按需能力，不受 enable_feature / enable_landmark 限制。
  *
  * CPU 线程上限属于进程级运行时配置，见 hiface_runtime_configure_v1；这里不再重复表达。
  */
@@ -338,9 +339,58 @@ typedef struct HiFaceModelLoadReportV1 {
     HiFaceModelBackendV1 landmarks_backend;
     HiFaceModelBackendV1 silent_liveness_s_backend;
     HiFaceModelBackendV1 silent_liveness_m_backend;
+    /* Optional tail: only written when struct_size includes these fields. */
+    HiFaceModelLoadStateV1 infrared_liveness;
+    HiFaceModelBackendV1 infrared_liveness_backend;
 } HiFaceModelLoadReportV1;
 
 #define HIFACE_MODEL_LOAD_REPORT_V1_MIN_SIZE 48u
+
+/**
+ * IR-only FLIR request. GRAY8 intensity samples, one byte per pixel, upright and
+ * unmirrored; 1..4096 per dimension. row_stride >= width; gray_size must include
+ * the last row's visible pixels. No RGB/Depth input is used. Caller supplies a
+ * detected face in this same IR image (x/y + width/height, at least 10x10).
+ * real_threshold must be finite, in [0,1], calibrated on the target IR device.
+ * The SDK does not acquire IR cameras, detect a face, or run action challenges
+ * through this entry point. Buffers are borrowed only until the call returns.
+ */
+typedef struct HiFaceInfraredLivenessRequestV1 {
+    uint32_t struct_size;
+    const uint8_t* gray;
+    size_t gray_size;
+    int32_t width;
+    int32_t height;
+    int32_t row_stride;
+    float face_x;
+    float face_y;
+    float face_width;
+    float face_height;
+    float real_threshold;
+} HiFaceInfraredLivenessRequestV1;
+
+#define HIFACE_INFRARED_LIVENESS_REQUEST_V1_MIN_SIZE \
+    (offsetof(HiFaceInfraredLivenessRequestV1, real_threshold) + sizeof(float))
+
+typedef struct HiFaceInfraredLivenessResultV1 {
+    uint32_t struct_size;
+    float real_score;  /* softmax class 1; higher is more likely live */
+    float spoof_score; /* 1-real_score; ModelScope exposes this direction */
+    uint32_t passed;   /* real_score >= request.real_threshold; valid only on OK */
+} HiFaceInfraredLivenessResultV1;
+
+#define HIFACE_INFRARED_LIVENESS_RESULT_V1_MIN_SIZE 16u
+
+/**
+ * Synchronous IR-only inference, serialized with other calls on this session.
+ * Load HIFACE_MODEL_INFRARED_LIVENESS first; no check/feature/landmarks models or
+ * prepare_loaded_models call is required. A low score is OK with passed=0;
+ * validation, unloaded model and inference failures return a non-OK status.
+ * Failure clears the known result fields. Call from a worker thread.
+ */
+HIFACE_API HiFaceStatus HIFACE_CALL hiface_session_evaluate_infrared_liveness_v1(
+        HiFaceSessionHandle session, const HiFaceInfraredLivenessRequestV1* request,
+        HiFaceInfraredLivenessResultV1* out_result);
 
 /** Face Mesh 顶点，位于旋转后、未镜像的图像像素空间；z 是模型相对深度。 */
 typedef struct HiFaceMeshPointV1 {

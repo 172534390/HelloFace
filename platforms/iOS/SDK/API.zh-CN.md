@@ -1,14 +1,14 @@
-# HiFace 0.0.3 API 指南
+# HiFace 0.0.4 API 指南
 
 [English](API.md) | 简体中文
 
 ## 支持与安装
 
-当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
-
-SDK正在Beta 迭代公测中，请及时升级SDK版本。
+**模型适用范围：当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。**
 
 人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+
+SDK正在Beta 迭代公测中，请及时升级SDK版本。
 
 | 项目 | 当前范围 |
 |---|---|
@@ -203,3 +203,25 @@ search.close()
 
 Demo 首页提供“图片人脸搜索识别”：相册选图、原图标框、身份与分数、矫正缩略图和人数汇总。
 默认全库 Top-1 / 0.80，不执行活体；图片搜索在 SDK 的 4096px 上限内保留原图尺寸，仅超限时等比缩小，奇数末边裁去 1px。人脸尺寸门槛按实际输入计算，图片比对和批量导入保留原有解码上限。
+
+## 红外单模态活体
+
+FLIR 接收已归正、未镜像的真实近红外 GRAY8 数据，宽高 1..4096，支持奇数尺寸和行填充。
+宿主提供该 IR 图像中的人脸框（左上角加宽高，至少 10×10）；IR 相机访问、人脸检测、补光和多人门禁
+由宿主负责。RGB 转灰度不能代替 IR 摄像头输入。
+
+```swift
+let frame = InfraredFrame(gray: grayData, width: width, height: height,
+    rowStride: rowStride, faceBounds: boundsInIRImage)
+let result = await sdk.evaluateInfraredLiveness(frame,
+    realThreshold: calibratedThreshold)
+```
+
+`calibratedThreshold` 必须用目标 IR 摄像头标定，使用 Float32 真人阈值。
+`realScore` 越高越可能是真人，`spoofScore=1-realScore`，`realScore >= threshold` 才通过。
+先检查技术错误再读结果。Android 在工作线程同步调用，iOS/鸿蒙使用有界后台队列，输入由 SDK
+持有或复制。此入口不改变既有 RGB 相机活体或搜索流程；iOS 接入前需确认可取得 IR 图像，SDK
+不负责读取 Face ID 内部红外流。
+
+FLIR 官方公布的 99.8% 拦截率 / 97.6% 真人通过率来自私有评测集，不是本 SDK 的目标设备实测；
+强光、3D 头模为已知限制。分发时保留 SDK 许可中的 FLIR MIT 声明，HiFace 自身许可独立。

@@ -1,6 +1,11 @@
 package com.hiface.sdk.demo.search;
 
-/** 延长期限时保留较早的检查，只有提前到期或清空画面才替换任务。 */
+/**
+ * Keep an earlier check when extending a deadline; replace the task only for an earlier expiry or
+ * cleared frame.
+ *
+ * 延长期限时保留较早的检查，只有提前到期或清空画面才替换任务。
+ */
 final class FaceSearchOverlayExpirySchedule {
     private long deadline;
 

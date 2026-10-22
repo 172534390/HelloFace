@@ -1,4 +1,8 @@
-/* Public C ABI only. Input is tightly packed, orientation-normalized RGBA8888. */
+/*
+ * Public C ABI only. Input is tightly packed, orientation-normalized RGBA8888.
+ *
+ * 仅使用公开 C ABI；输入为方向已归正、紧密排列的 RGBA8888。
+ */
 #include <hiface/hiface_linux.h>
 #include <errno.h>
 #include <stdio.h>
@@ -82,7 +86,7 @@ int main(int argc, char **argv) {
     printf("faces=%u (static images have no liveness gate)\n", count);
     for (i = 0; i < count; ++i) {
         printf("face=%u status=%d\n", i + 1, (int)statuses[i]);
-        if (statuses[i] != HIFACE_STATUS_OK) continue; /* Small faces are independent failures. */
+        if (statuses[i] != HIFACE_STATUS_OK) continue; /* Small faces are independent failures. / 过小人脸分别作为独立失败处理。 */
         if (!check(hiface_search_query_v1(database, features + i * HIFACE_FACE_FEATURE_DIMENSION,
                 HIFACE_FACE_FEATURE_DIMENSION, NULL, NULL, 1, HIFACE_DEFAULT_VERIFICATION_THRESHOLD,
                 &results), "query database")) goto done;
@@ -92,7 +96,11 @@ int main(int argc, char **argv) {
             entry.struct_size = sizeof(entry);
             if (!check(hiface_search_results_get_v1(results, 0, &entry, &score), "read result")) goto done;
             printf("  id=%s similarity=%.6f\n", entry.face_id, (double)score);
-            /* Copy entry strings/feature before destroying results if the application retains them. */
+            /*
+             * Copy entry strings/feature before destroying results if the application retains them.
+             *
+             * 若应用需要保留条目字符串或特征，应在销毁结果前复制。
+             */
         } else { puts("  unmatched (or empty library)"); }
         hiface_search_results_destroy_v1(results); results = NULL;
     }

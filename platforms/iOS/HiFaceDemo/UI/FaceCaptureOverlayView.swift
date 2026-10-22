@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Shared guidance layout for capture, verification, and liveness; the preview's shorter side adds only
+/// a safety margin around the circle.
 /// 采集、验证和活体共用的引导布局。预览短边只比圆圈直径多一圈安全余量。
 enum FaceCaptureLayout {
     static let previewMargin: CGFloat = 24
@@ -26,6 +28,9 @@ enum FaceCaptureLayout {
     }
 }
 
+/// Counterpart of Android ui/FaceCaptureOverlayView: white circular-opening mask, status above, and
+/// remaining-countdown ring. Draw guidance only without copying, cropping, or scaling SDK camera
+/// frames.
 /// 对应 Android ui/FaceCaptureOverlayView：白色圆孔遮罩、上方状态和剩余倒计时圆环。
 /// 只绘制引导层，不复制、裁剪或缩放送入 SDK 的相机帧。
 struct FaceCaptureOverlayView: View {

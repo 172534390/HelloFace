@@ -1,7 +1,12 @@
 import { Yuv420Frame } from 'hiface';
 import { CameraPreviewCallbacks, CameraPreviewState } from './CameraPreviewCallbacks';
 
-/** 把 CameraPreviewController 的命名回调转交给页面，避免控制器反向依赖 ArkUI 组件。 */
+/**
+ * Forward named CameraPreviewController callbacks to the screen without making the controller depend
+ * on ArkUI components.
+ *
+ * 把 CameraPreviewController 的命名回调转交给页面，避免控制器反向依赖 ArkUI 组件。
+ */
 export class DemoCameraCallbacks implements CameraPreviewCallbacks {
   private readonly stateHandler: (state: CameraPreviewState, frontCamera: boolean, profile: string) => void;
   private readonly frameHandler: (frame: Yuv420Frame) => Promise<void>;

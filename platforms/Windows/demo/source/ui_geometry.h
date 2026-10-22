@@ -5,6 +5,7 @@
 namespace hiface_demo {
 // Device-pixel geometry shared by drawing, pointer hit testing and scrolling.
 // Keeping this independent of HWND also allows layout regressions to run on the host.
+// 绘制、指针命中测试和滚动共用设备像素几何；独立于 HWND，便于在宿主执行布局回归。
 struct UiRect {
     int left = 0, top = 0, right = 0, bottom = 0;
     int width() const { return std::max(0, right - left); }
@@ -57,7 +58,20 @@ struct PhotoLayout {
         return clampScroll(scroll, count);
     }
 };
+inline UiRect homeCard(int width, int height, int main_left, int count, int index) {
+    const int columns = width < 900 ? 2 : 3, gap = 12, rows = (count + columns - 1) / columns;
+    const int card_width = (width - main_left - 32 - gap * (columns - 1)) / columns;
+    const int card_height = std::min(142, (height - 190 - gap * (rows - 1)) / rows);
+    const int x = main_left + 8 + (index % columns) * (card_width + gap), y = 102 + (index / columns) * (card_height + gap);
+    return {x, y, x + card_width, y + card_height};
+}
+inline UiRect navigationItem(int height, int width, int count, int index) {
+    const int step = std::min(46, (height - 106) / count);
+    const int top = 94 + index * step;
+    return {12, top, width - 20, top + std::max(1, step - 6)};
+}
 // Toolbar controls wrap as a unit; native combobox popup height is independent.
+// 工具栏控件整体换行；原生组合框弹出列表的高度独立处理。
 struct ToolbarLayout {
     int left, right, x, y;
     ToolbarLayout(int start, int end, int top) : left(start), right(end), x(start), y(top) {}

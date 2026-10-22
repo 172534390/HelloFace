@@ -1,19 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist "bin\hiface_cli.exe" (
-  echo RESULT: FAIL - bin\hiface_cli.exe is missing.
-  pause
-  exit /b 1
-)
-"%~dp0bin\hiface_cli.exe" self-test
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0diagnose.ps1"
 set "HiFaceResult=%ERRORLEVEL%"
 echo.
-if "%HiFaceResult%"=="0" (
-  echo RESULT: PASS
-) else (
-  echo RESULT: FAIL ^(exit code %HiFaceResult%^)
-)
-echo Logs: %%LOCALAPPDATA%%\HiFaceDemo\logs
+echo Test exit code: %HiFaceResult% ^(0 = passed^)
+echo Reports: %%LOCALAPPDATA%%\HiFaceDemo\logs
 pause
 exit /b %HiFaceResult%

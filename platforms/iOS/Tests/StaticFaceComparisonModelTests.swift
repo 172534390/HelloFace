@@ -1,5 +1,7 @@
 import Foundation
 
+// Matching SDK stubs control only asynchronous completion order; run the real Demo Model without
+// photos, models, or Keychain access.
 // 等形 SDK 桩只控制异步完成顺序，运行真实 Demo Model；不访问照片、模型或 Keychain。
 typealias CGImage = String
 struct HiFaceRGBAImage: Sendable {

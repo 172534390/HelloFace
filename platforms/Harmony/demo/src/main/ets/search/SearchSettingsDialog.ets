@@ -3,7 +3,12 @@ import { FaceSearchSessionConfig, FaceSearchMode } from 'hiface';
 import { DemoTheme } from '../ui/DemoTheme';
 import { createDemoFaceSearchConfig, DEMO_SUCCESS_INTERVAL_MILLIS } from './DemoFaceSearchConfig';
 
-/** 搜索参数草稿独立于相机会话；取消不写回，校验通过后一次提交。 */
+/**
+ * Keep the settings draft independent of the camera session; cancellation writes nothing, and
+ * validation commits all values once.
+ *
+ * 搜索参数草稿独立于相机会话；取消不写回，校验通过后一次提交。
+ */
 @Component
 export struct SearchSettingsDialog {
   @Prop initialConfig: FaceSearchSessionConfig = createDemoFaceSearchConfig();

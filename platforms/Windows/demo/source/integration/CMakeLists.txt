@@ -1,4 +1,5 @@
 # Compiled by the consumer: no C++ ABI crosses the HiFace DLL boundary.
+# 由接入方编译，HiFace DLL 边界不传递 C++ ABI。
 if(NOT DEFINED HIFACE_CPP_INCLUDE_DIR)
     get_filename_component(HIFACE_CPP_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/../include" ABSOLUTE)
 endif()

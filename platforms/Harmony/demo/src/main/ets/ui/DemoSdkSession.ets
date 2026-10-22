@@ -1,7 +1,12 @@
 import { HiFaceSdk, HiFaceResult, HiFaceErrorCode } from 'hiface';
 import { common } from '@kit.AbilityKit';
 
-/** 初始化失败可重建；退出或重试后，旧初始化不能重新激活页面。 */
+/**
+ * Allow recreation after initialization failure; old initialization must not reactivate a screen after
+ * exit or retry.
+ *
+ * 初始化失败可重建；退出或重试后，旧初始化不能重新激活页面。
+ */
 export class DemoSdkSession {
   private generation: number = 0;
   private sdk: HiFaceSdk | undefined = undefined;

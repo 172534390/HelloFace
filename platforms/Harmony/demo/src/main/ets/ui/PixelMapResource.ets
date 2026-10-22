@@ -1,6 +1,11 @@
 import { image } from '@kit.ImageKit';
 
-/** Demo PixelMap 资源工具：集中创建 RGBA 预览，并吞掉清理阶段的系统资源异常。 */
+/**
+ * Demo PixelMap helpers centralize RGBA-preview creation and suppress system-resource exceptions
+ * during cleanup.
+ *
+ * Demo PixelMap 资源工具：集中创建 RGBA 预览，并吞掉清理阶段的系统资源异常。
+ */
 export class PixelMapResource {
   static async createRgba(rgba: ArrayBuffer, width: number,
     height: number): Promise<image.PixelMap | undefined> {

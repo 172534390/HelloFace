@@ -6,6 +6,8 @@ import { huks } from '@kit.UniversalKeystoreKit';
 import { FaceFeatureFormat } from 'hiface';
 
 const STORE_NAME: string = 'hiface_verification_references';
+// HF1 contains no model identity; retain old snapshots but read/update references only in the current
+// feature space.
 // HF1 不携带模型身份；保留旧快照，只读取和更新当前空间的参考特征。
 const ENCRYPTED_REFERENCES_KEY: string = `encrypted_references_v1:${FaceFeatureFormat.FEATURE_SPACE_ID}`;
 const KEY_ALIAS: string = 'hiface.demo.verification.references.v1';
@@ -21,7 +23,12 @@ const ASSOCIATED_DATA: Uint8Array = new Uint8Array([
   0x48, 0x69, 0x46, 0x61, 0x63, 0x65, 0x2d, 0x31, 0x3a, 0x31
 ]); // HiFace-1:1
 
-/** Demo 的 1:1 验证基准；HF1 不是哈希，持久化必须经过认证加密。 */
+/**
+ * Demo 1:1 verification reference; HF1 is not a hash and requires authenticated encryption for
+ * persistence.
+ *
+ * Demo 的 1:1 验证基准；HF1 不是哈希，持久化必须经过认证加密。
+ */
 export class FaceReference {
   readonly faceId: string;
   readonly feature: string;
@@ -33,6 +40,10 @@ export class FaceReference {
 }
 
 /**
+ * Demo-only 1:1 reference storage: HUKS holds a nonexportable AES key; Preferences stores only AES-GCM
+ * ciphertext. Commit the complete snapshot with one random nonce and one Preferences value to avoid
+ * partial ID/feature updates.
+ *
  * Demo 专用的 1:1 基准存储：HUKS 持有不可导出的 AES 密钥，Preferences 只保存 AES-GCM 密文。
  * 整份快照使用单一随机 nonce 和单一 Preferences 值提交，避免 ID 与特征分开写入造成半更新状态。
  */
@@ -80,7 +91,11 @@ export class FaceFeatureStore {
     }
   }
 
-  /** 完成 HUKS 加密及 Preferences flush 后才更新内存快照。 */
+  /**
+   * Update the memory snapshot only after HUKS encryption and Preferences flush complete.
+   *
+   * 完成 HUKS 加密及 Preferences flush 后才更新内存快照。
+   */
   save(context: common.UIAbilityContext, faceId: string,
     feature: string): Promise<FaceReference[]> {
     return this.enqueue<FaceReference[]>(() => this.saveSnapshot(context, faceId, feature));
@@ -126,14 +141,24 @@ export class FaceFeatureStore {
     }
   }
 
-  /** 页面销毁时只清除内存副本；加密快照供下次应用启动恢复。 */
+  /**
+   * Clear only the in-memory copy on screen destruction; retain the encrypted snapshot for the next app
+   * launch.
+   *
+   * 页面销毁时只清除内存副本；加密快照供下次应用启动恢复。
+   */
   clear(): void {
     this.generation += 1;
     this.references = [];
     this.loaded = false;
   }
 
-  /** 用户明确确认恢复时删除不可读取的密文快照；HUKS 密钥保留并可继续安全复用。 */
+  /**
+   * Delete unreadable ciphertext only after explicit user recovery confirmation; retain the HUKS key for
+   * safe reuse.
+   *
+   * 用户明确确认恢复时删除不可读取的密文快照；HUKS 密钥保留并可继续安全复用。
+   */
   reset(context: common.UIAbilityContext): Promise<void> {
     return this.enqueue<void>(() => this.resetSnapshot(context));
   }
@@ -146,7 +171,12 @@ export class FaceFeatureStore {
     this.loaded = true;
   }
 
-  /** 串行读改写，避免两个保存覆盖彼此；页面销毁后不能恢复旧明文快照。 */
+  /**
+   * Serialize read-modify-write operations to avoid lost concurrent saves; never restore an old
+   * plaintext snapshot after screen destruction.
+   *
+   * 串行读改写，避免两个保存覆盖彼此；页面销毁后不能恢复旧明文快照。
+   */
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
     const generation: number = this.generation;
     const result: Promise<T> = this.operations.then(async (): Promise<T> => {
@@ -185,6 +215,7 @@ export class FaceFeatureStore {
     try {
       await huks.generateKeyItem(KEY_ALIAS, options);
     } catch (error) {
+      // Concurrent first saves may observe that another operation already generated the same named key.
       // 两个保存操作同时首次进入时允许另一个操作已经生成同名密钥。
       if (!(await huks.hasKeyItem(KEY_ALIAS, empty))) {
         throw new Error(`Unable to generate the face reference encryption key: ${error}`);

@@ -19,9 +19,19 @@ import com.hiface.sdk.demo.R;
 import com.hiface.sdk.search.FaceSearchSessionConfig;
 import com.hiface.sdk.search.FaceSearchMode;
 
-/** 设置只编辑草稿，校验通过并点击“应用”后才更新运行中的搜索。 */
+/**
+ * Settings edit only a draft; update running search only after validation and an explicit Apply
+ * action.
+ *
+ * 设置只编辑草稿，校验通过并点击“应用”后才更新运行中的搜索。
+ */
 final class SearchSettingsDialog {
-    /** 默认匹配成功后立即开始下一轮；只影响成功后的下一轮，不控制相机帧率。 */
+    /**
+     * Start the next round immediately after a match by default; this interval affects successful rounds,
+     * not camera frame rate.
+     *
+     * 默认匹配成功后立即开始下一轮；只影响成功后的下一轮，不控制相机帧率。
+     */
     static final int DEMO_SUCCESS_INTERVAL_MILLIS = 0;
 
     static FaceSearchSessionConfig demoDefaultConfig() {
@@ -50,7 +60,12 @@ final class SearchSettingsDialog {
     private SearchUi.Input interval;
     private SearchUi.Input timeout;
 
-    /** 以当前运行配置创建独立草稿弹窗，应用成功后才通知搜索页面。 */
+    /**
+     * Create an independent draft dialog from the running configuration; notify the search screen only
+     * after successful application.
+     *
+     * 以当前运行配置创建独立草稿弹窗，应用成功后才通知搜索页面。
+     */
     static AlertDialog show(Context owner, FaceSearchSessionConfig current, OnApplyListener listener) {
         return new SearchSettingsDialog(owner, current).showDialog(listener);
     }
@@ -60,7 +75,11 @@ final class SearchSettingsDialog {
         this.current = current;
     }
 
-    /** 组装设置表单并接管应用/重置按钮，校验失败时保持弹窗打开。 */
+    /**
+     * Build the settings form and own Apply/Reset handling; leave the dialog open on validation failure.
+     *
+     * 组装设置表单并接管应用/重置按钮，校验失败时保持弹窗打开。
+     */
     private AlertDialog showDialog(OnApplyListener listener) {
         LinearLayout form = SearchUi.form(context);
         addModeSettings(form);
@@ -102,7 +121,12 @@ final class SearchSettingsDialog {
         return dialog;
     }
 
-    /** 创建单人/多人模式、单帧活体开关和多人采样上限控件。 */
+    /**
+     * Create single/multi-face mode controls, a single-frame liveness switch, and the multi-face sample
+     * limit.
+     *
+     * 创建单人/多人模式、单帧活体开关和多人采样上限控件。
+     */
     private void addModeSettings(LinearLayout form) {
         SearchUi.section(form, R.string.search_ui_mode_section);
         modes = new MaterialButtonToggleGroup(context);
@@ -128,7 +152,11 @@ final class SearchSettingsDialog {
                 R.string.search_ui_max_help, InputType.TYPE_CLASS_NUMBER);
     }
 
-    /** 编辑本 Demo 支持的 group 条件；留空表示搜索所有分组。 */
+    /**
+     * Edit the Demo-supported group filter; blank means search all groups.
+     *
+     * 编辑本 Demo 支持的 group 条件；留空表示搜索所有分组。
+     */
     private void addScopeSettings(LinearLayout form) {
         SearchUi.section(form, R.string.search_ui_scope_section);
         form.addView(SearchUi.text(context, R.string.search_ui_scope_help, 12, false));
@@ -137,7 +165,12 @@ final class SearchSettingsDialog {
         group.box.setPlaceholderText(context.getString(R.string.search_ui_group_example));
     }
 
-    /** 展示相似度门槛，将成功间隔与单轮超时收进可展开的高级参数区。 */
+    /**
+     * Display the similarity threshold and place success interval and round timeout in expandable advanced
+     * settings.
+     *
+     * 展示相似度门槛，将成功间隔与单轮超时收进可展开的高级参数区。
+     */
     private void addSearchParameters(LinearLayout form) {
         SearchUi.section(form, R.string.search_ui_parameters);
         threshold = SearchUi.field(form, R.string.search_ui_threshold_label,
@@ -173,7 +206,12 @@ final class SearchSettingsDialog {
         more.setOnClickListener(v -> showAdvanced(advanced.getVisibility() != View.VISIBLE));
     }
 
-    /** 切到多人模式时关闭并禁用活体，切回单人时默认开启；采样上限仅在多人模式显示。 */
+    /**
+     * Disable liveness in multi-face mode and enable it by default when returning to single-face mode;
+     * show the sample limit only for multi-face mode.
+     *
+     * 切到多人模式时关闭并禁用活体，切回单人时默认开启；采样上限仅在多人模式显示。
+     */
     private void updateMode(boolean many) {
         live.setChecked(!many);
         live.setEnabled(!many);
@@ -183,13 +221,21 @@ final class SearchSettingsDialog {
         maxFaces.box.setVisibility(many ? View.VISIBLE : View.GONE);
     }
 
-    /** 切换高级参数区的可见性，保留已经填写的草稿值。 */
+    /**
+     * Toggle advanced-settings visibility while preserving entered draft values.
+     *
+     * 切换高级参数区的可见性，保留已经填写的草稿值。
+     */
     private void showAdvanced(boolean visible) {
         advanced.setVisibility(visible ? View.VISIBLE : View.GONE);
         more.setSelected(visible);
     }
 
-    /** 恢复 Demo 参数；成功间隔默认为 0，匹配成功后立即开始下一轮。 */
+    /**
+     * Restore Demo defaults; a zero success interval starts the next round immediately after a match.
+     *
+     * 恢复 Demo 参数；成功间隔默认为 0，匹配成功后立即开始下一轮。
+     */
     private void resetDraft() {
         FaceSearchSessionConfig defaults = demoDefaultConfig();
         modes.check(single.getId());
@@ -201,7 +247,11 @@ final class SearchSettingsDialog {
         maxFaces.set(String.valueOf(defaults.getMaxFacesPerFrame()));
     }
 
-    /** 返回 null 时保留弹窗，并在对应字段显示错误。 */
+    /**
+     * A null result keeps the dialog open and displays an error on the corresponding field.
+     *
+     * 返回 null 时保留弹窗，并在对应字段显示错误。
+     */
     private FaceSearchSessionConfig readConfig() {
         float score;
         try {
@@ -231,6 +281,7 @@ final class SearchSettingsDialog {
                 limit = draft;
             }
         } catch (NumberFormatException ignored) {
+            // Ignore hidden incomplete input in single-face mode and preserve the previous multi-face limit.
             // 单人模式下忽略隐藏的未完成输入，保留原有多人采样上限。
         }
         return FaceSearchSessionConfig.builder()
@@ -244,7 +295,11 @@ final class SearchSettingsDialog {
                 .build();
     }
 
-    /** 创建统一样式且具有独立 View ID 的模式切换按钮。 */
+    /**
+     * Create a consistently styled mode button with its own View ID.
+     *
+     * 创建统一样式且具有独立 View ID 的模式切换按钮。
+     */
     private MaterialButton modeButton(@StringRes int label) {
         MaterialButton button = new MaterialButton(context);
         button.setId(View.generateViewId());

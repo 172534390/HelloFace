@@ -1,4 +1,8 @@
-/** 与 Android res/values/colors.xml 对应的 Demo 语义色，系统控件使用 ArkUI。 */
+/**
+ * Demo semantic colors corresponding to Android res/values/colors.xml; system controls use ArkUI.
+ *
+ * 与 Android res/values/colors.xml 对应的 Demo 语义色，系统控件使用 ArkUI。
+ */
 export class DemoTheme {
   static readonly brand: string = '#3C0740';
   static readonly primary: string = '#67AD5B';

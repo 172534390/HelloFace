@@ -272,6 +272,7 @@ public struct HiFaceConfiguration : Swift.Sendable, Swift.Equatable {
   final public func startCameraCapture(callbacks: HiFace.FaceCaptureCallbacks) -> HiFace.FaceRequest
   @discardableResult
   final public func startCameraCapture(callbacks: HiFace.FaceFlowCallbacks) -> HiFace.FaceRequest
+  final public func evaluateInfraredLiveness(_ frame: HiFace.InfraredFrame, realThreshold: Swift.Float) async -> Swift.Result<HiFace.InfraredLivenessResult, HiFace.HiFaceError>
   @discardableResult
   final public func startCameraLiveness(configuration: HiFace.FaceLivenessConfiguration = .default, callbacks: HiFace.FaceFlowCallbacks) -> HiFace.FaceRequest
   @discardableResult
@@ -316,6 +317,25 @@ public struct FaceLivenessConfiguration : Swift.Sendable, Swift.Equatable {
   public init(actions: [HiFace.FaceAction] = [], actionTimeoutMilliseconds: Swift.Int64? = nil, faceAcquisitionTimeoutMilliseconds: Swift.Int64? = nil, allowsMultipleFaces: Swift.Bool = false) throws
   public static let `default`: HiFace.FaceLivenessConfiguration
   public static func == (a: HiFace.FaceLivenessConfiguration, b: HiFace.FaceLivenessConfiguration) -> Swift.Bool
+}
+public struct InfraredFrame : Swift.Sendable {
+  public let gray: Foundation.Data
+  public let width: Swift.Int
+  public let height: Swift.Int
+  public let rowStride: Swift.Int
+  public let faceBounds: HiFace.FaceBounds
+  public init(gray: Foundation.Data, width: Swift.Int, height: Swift.Int, rowStride: Swift.Int, faceBounds: HiFace.FaceBounds)
+}
+public struct InfraredLivenessResult : Swift.Sendable, Swift.Equatable {
+  public let realScore: Swift.Float
+  public let threshold: Swift.Float
+  public var spoofScore: Swift.Float {
+    get
+  }
+  public var passed: Swift.Bool {
+    get
+  }
+  public static func == (a: HiFace.InfraredLivenessResult, b: HiFace.InfraredLivenessResult) -> Swift.Bool
 }
 public enum FaceFeatureFormat {
   public static let featureSpaceID: Swift.String

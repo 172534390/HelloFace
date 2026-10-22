@@ -7,6 +7,7 @@ struct Update : hiface::FrameUpdate {
     bool enrolling = false, saved = false;
 };
 // Application workflow: prompts, enrollment identity and persistence policy.
+// 应用工作流：提示、录入身份与持久化策略。
 class DemoService {
 public:
     explicit DemoService(const std::filesystem::path& database);

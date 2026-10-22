@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        // Prefer a mirror for Google plugin repositories, with the official repository as fallback.
         // Google 插件仓库优先使用镜像，官方仓库兜底。
         maven("https://maven.aliyun.com/repository/google") {
             content {
@@ -31,6 +32,7 @@ val sdkRepository = providers.gradleProperty("hiface.sdkRepository")
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // Prefer a mirror for Google dependencies, with the official repository as fallback.
         // Google 依赖仓库优先使用镜像，官方仓库兜底。
         maven("https://maven.aliyun.com/repository/google") {
             content {
@@ -40,6 +42,8 @@ dependencyResolutionManagement {
             }
         }
         google()
+        // Release workflows can target an isolated local repository to verify the Demo consumes only the
+        // candidate AAR.
         // 发布工作流可指向隔离的本地仓库，验证 Demo 确实只消费待发布 AAR。
         sdkRepository?.let { repositoryUrl ->
             maven {

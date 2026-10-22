@@ -7,6 +7,7 @@ import XCTest
 @testable import HiFaceDemo
 
 /// Run inside the real Demo App against the binary SDK; exercise model resources and HF1 storage without a camera.
+/// 在真实 Demo App 内针对二进制 SDK 运行，无需相机即可验证模型资源与 HF1 存储。
 final class ModelResourceTests: XCTestCase {
     @MainActor
     func testImageSearchPreservesOriginalResolutionAndOddPixelCrop() async throws {

@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Capture, liveness, and dynamic 1:1 share camera background, circular guidance, and navigation;
+/// screens choose only available actions.
 /// 采集、活体和动态 1:1 共用相机底图、圆形引导与导航，页面只决定可用操作。
 struct FaceCaptureCameraView: View {
     @ObservedObject var model: CameraDemoModel
@@ -21,6 +23,8 @@ struct FaceCaptureCameraView: View {
                 availableSize: geometry.size
             )
             ZStack {
+                // Reduce the displayed preview's shorter side on guided screens without changing frames, resolution,
+                // or SDK input.
                 // 引导页缩小预览的显示短边；底层帧、分辨率和 SDK 输入保持不变。
                 CameraPreview(session: model.pipeline.captureSession, mirrored: model.previewMirrored)
                     .frame(width: previewShortSide, height: geometry.size.height)

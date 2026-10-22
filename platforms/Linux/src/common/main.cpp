@@ -1,4 +1,5 @@
 // Standalone consumer: public C ABI only; no OpenCV, camera or private Core headers.
+// 独立接入示例：仅使用公开 C ABI，不依赖 OpenCV、相机或私有 Core 头文件。
 #include "sdk_helpers.h"
 #include "image_decode.h"
 #include "gallery.h"

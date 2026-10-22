@@ -9,7 +9,11 @@ import androidx.appcompat.widget.SwitchCompat;
 
 import com.hiface.sdk.demo.R;
 
-/** 所有 Demo 相机页面共用的两项设备设置，修改后自动保存。 */
+/**
+ * Two device settings shared by all Demo camera screens; changes save automatically.
+ *
+ * 所有 Demo 相机页面共用的两项设备设置，修改后自动保存。
+ */
 public final class CameraSettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {

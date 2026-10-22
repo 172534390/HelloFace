@@ -2,8 +2,11 @@ import Foundation
 import HiFace
 import Security
 
+/// Demo 1:1 reference storage; HF1, Face ID, and selection remain only in the local Keychain.
 /// Demo 的 1:1 参考存储。HF1、Face ID 及当前选择都只保存在本机 Keychain。
 enum DemoFaceStore {
+    // HF1 contains no model identity; isolate references and selection by feature space while preserving
+    // old spaces.
     // HF1 不携带模型身份；参考特征与选择都按空间隔离，保留旧空间的数据。
     private static let service = "com.hiface.demo.face-feature.\(FaceFeatureFormat.featureSpaceID)"
     private static let selectionService = "\(service).selection"
@@ -26,6 +29,8 @@ enum DemoFaceStore {
                 identity as CFDictionary,
                 [
                     kSecValueData as String: data,
+                    // Reassert access policy when updating features so an existing same-name record cannot retain weaker
+                    // attributes.
                     // 更新特征时同时重申访问策略，避免同名记录保留更宽松的属性。
                     kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
                 ] as CFDictionary
@@ -79,6 +84,7 @@ enum DemoFaceStore {
         try storeSelectedFaceID(faceID)
     }
 
+    /// Reuse this round's identity list instead of rescanning Keychain on screen refresh.
     /// 复用本轮读取的身份列表，避免刷新页面时再次扫描 Keychain。
     static func selectedFaceID(among available: [String]) throws -> String? {
         guard !available.isEmpty else {

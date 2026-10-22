@@ -11,6 +11,7 @@ namespace {
 // The interchange format is Android's JSON envelope, parsed without a runtime
 // dependency. Bounds, escaped Unicode, duplicate keys and trailing input matter
 // here because a malformed import must never silently change identity metadata.
+// 交换格式采用 Android 的 JSON 外层结构，无额外运行时依赖；严格处理边界、Unicode 转义、重复键和尾部输入，避免损坏的导入静默改变身份元数据。
 struct Json {
     enum Kind { Object, Array, String, Number, Other } kind = Other;
     std::string text;
@@ -125,6 +126,7 @@ private:
         value.text = text_.substr(begin, at_ - begin);
         if (value.text == "null" || value.text == "true" || value.text == "false") return value;
         // Interchange files use integer fields only; reject non-JSON spellings.
+        // 交换文件只使用整数字段，拒绝不符合 JSON 的数值写法。
         if (value.text.empty()) fail();
         size_t i = value.text.front() == '-' ? 1 : 0;
         if (i == value.text.size()) fail();

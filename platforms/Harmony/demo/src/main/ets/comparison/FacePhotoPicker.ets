@@ -4,7 +4,11 @@ import { fileIo } from '@kit.CoreFileKit';
 import { RgbaImage } from 'hiface';
 import { PixelMapResource } from '../ui/PixelMapResource';
 
-/** Demo 图库适配器：把授权 URI 转成方向正确、无行填充的 RGBA8888 输入。 */
+/**
+ * Demo gallery adapter converting authorized URIs into upright, tightly packed RGBA8888 input.
+ *
+ * Demo 图库适配器：把授权 URI 转成方向正确、无行填充的 RGBA8888 输入。
+ */
 export class FacePhotoPicker {
   static readonly IMAGE_SEARCH_MAX_SIDE: number = RgbaImage.MAX_SIDE_PIXELS;
   readonly rgba: RgbaImage;
@@ -24,12 +28,16 @@ export class FacePhotoPicker {
         return undefined;
       }
       const uri: string = selected.photoUris[0];
+      // PhotoViewPicker returns an authorized URI; createImageSource(string) accepts only app-sandbox paths.
       // PhotoViewPicker 返回授权 URI；createImageSource(string) 只接受应用沙盒路径。
       const file: fileIo.File = await fileIo.open(uri, fileIo.OpenMode.READ_ONLY);
       let source: image.ImageSource | undefined = undefined;
       try {
         source = image.createImageSource(file.fd);
         if (source === undefined) throw new Error('Unable to create image source');
+        // Do not pass temporary PhotoViewPicker URIs to ArkUI for decoding again. RGBA pixels are already
+        // copied into app memory; use only that copy after dismissal to avoid access racing permission
+        // revocation.
         // 不把 PhotoViewPicker 的临时授权 URI 交给 ArkUI 再次解码。RGBA 数据已经完全
         // 复制到应用内存，选择器关闭后只使用这份数据，避免图库授权回收时的并发访问。
         return new FacePhotoPicker(await FacePhotoPicker.decodeSource(source, maximumSide));
@@ -41,7 +49,11 @@ export class FacePhotoPicker {
     }
   }
 
-  /** 把网络或 rawfile 中的编码图片转换成 SDK 使用的紧凑 RGBA 输入。 */
+  /**
+   * Decode network or rawfile images into tightly packed RGBA input for the SDK.
+   *
+   * 把网络或 rawfile 中的编码图片转换成 SDK 使用的紧凑 RGBA 输入。
+   */
   static async decode(encoded: ArrayBuffer): Promise<RgbaImage> {
     const source: image.ImageSource = image.createImageSource(encoded);
     if (source === undefined) throw new Error('Unable to create image source');
@@ -104,10 +116,14 @@ export class FacePhotoPicker {
     if (!Number.isInteger(maximumSide) || maximumSide < 2 || maximumSide > RgbaImage.MAX_SIDE_PIXELS) {
       throw new Error('Image limit must be within 2..4096');
     }
+    // Search preserves original dimensions within SDK limits; comparison and import retain their own
+    // default decode limits.
     // 搜索在 SDK 上限内保留原尺寸；比对和导入保留各自的默认解码上限。
     const scale: number = Math.min(1, maximumSide / Math.max(width, height));
     const evenWidth: number = Math.floor(width * scale / 2) * 2;
     const evenHeight: number = Math.floor(height * scale / 2) * 2;
+    // Android crops odd trailing edges; reject images smaller than 2 px after cropping rather than
+    // inventing pixels by upscaling.
     // Android 会裁掉奇数末边，裁剪后不足 2px 的退化图片应拒绝，不能人为放大补像素。
     if (evenWidth < 2 || evenHeight < 2) {
       throw new Error('Decoded image is too small after even-size cropping');
@@ -121,6 +137,8 @@ export class FacePhotoPicker {
     const height: number = info.size.height;
     const byteCount: number = width * height * 4;
     const pixels = new ArrayBuffer(byteCount);
+    // readPixelsToBuffer preserves PixelMap format. Submit ordinary tightly packed RGBA directly to the
+    // SDK instead of swapping millions of channels on the ArkUI thread.
     // readPixelsToBuffer 保留 PixelMap 自身格式。正常 RGBA 紧凑布局可直接交给 SDK，
     // 避免在 ArkUI 线程执行数百万次通道交换。
     if (info.pixelFormat === image.PixelMapFormat.RGBA_8888 &&
@@ -128,6 +146,8 @@ export class FacePhotoPicker {
       await pixelMap.readPixelsToBuffer(pixels);
       return pixels;
     }
+    // Use region reads to remove padding for uncommon layouts such as DMA buffers; HarmonyOS specifies
+    // BGRA output for this API.
     // 带 DMA 行填充等少数布局使用区域读取压紧；鸿蒙规定该接口输出 BGRA。
     const area: image.PositionArea = { pixels: pixels, offset: 0, stride: width * 4,
       region: { x: 0, y: 0, size: { width: width, height: height } } };

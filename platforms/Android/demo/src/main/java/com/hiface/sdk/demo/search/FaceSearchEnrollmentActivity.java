@@ -23,7 +23,11 @@ import com.hiface.sdk.demo.ui.CaptureStatusUi;
 import com.hiface.sdk.demo.ui.DemoErrorUi;
 import com.hiface.sdk.flow.FaceFlowProgress;
 
-/** 录入接入示例：稳定采集 → 预览与填写 ID/分组 → 保存特征。 */
+/**
+ * Enrollment example: stable capture, preview and ID/group entry, then save the feature.
+ *
+ * 录入接入示例：稳定采集 → 预览与填写 ID/分组 → 保存特征。
+ */
 public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
     private FaceSearchStore store;
     private FaceSearchStore.Request<?> saveRequest;
@@ -33,14 +37,24 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
     private FaceCaptureResult pending;
     private boolean saving;
 
-    /** 创建页面级采集 SDK 与人脸库入口，相机帧仍通过统一 processFrame 入口送入。 */
+    /**
+     * Create screen-scoped capture SDK and face-library access; camera frames still use the shared
+     * processFrame entry point.
+     *
+     * 创建页面级采集 SDK 与人脸库入口，相机帧仍通过统一 processFrame 入口送入。
+     */
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         initializeCameraSdk();
     }
 
-    /** 页面可见时启动一轮稳定采集；成功后暂停分析，等待用户确认入库。 */
+    /**
+     * Start stable capture while visible; pause analysis on success and wait for the user's enrollment
+     * confirmation.
+     *
+     * 页面可见时启动一轮稳定采集；成功后暂停分析，等待用户确认入库。
+     */
     @Override
     protected void startCameraFlow() {
         if (!canStartCameraFlow() || pending != null || captureError != null) {
@@ -77,7 +91,12 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
         }));
     }
 
-    /** 展示本次采集预览并收集 ID、分组；重拍丢弃待保存结果，保存前校验非空 ID。 */
+    /**
+     * Show the captured preview and collect ID/group; retaking discards the pending result, and saving
+     * requires a nonempty ID.
+     *
+     * 展示本次采集预览并收集 ID、分组；重拍丢弃待保存结果，保存前校验非空 ID。
+     */
     private void showConfirmation(FaceCaptureResult capture) {
         Context themed = SearchUi.theme(this);
         LinearLayout form = SearchUi.form(themed);
@@ -105,6 +124,7 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
                 .create();
         confirmation = dialog;
         dialog.setOnDismissListener(d -> {
+            // getAlignedFace() returns a Bitmap owned by this preview; release it when the dialog closes.
             // getAlignedFace() 返回本次预览独占的 Bitmap，关闭弹窗时释放。
             image.setImageDrawable(null);
             bitmap.recycle();
@@ -127,7 +147,12 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getColor(android.R.color.white));
     }
 
-    /** 添加对齐人脸预览；前摄仅在 ImageView 上镜像，不修改 SDK 返回的特征或位图像素。 */
+    /**
+     * Add an aligned-face preview; mirror the front camera only in ImageView, without changing SDK
+     * features or bitmap pixels.
+     *
+     * 添加对齐人脸预览；前摄仅在 ImageView 上镜像，不修改 SDK 返回的特征或位图像素。
+     */
     private ImageView addPreview(LinearLayout form, Bitmap bitmap) {
         ImageView image = new ImageView(form.getContext());
         image.setImageBitmap(bitmap);
@@ -145,7 +170,12 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
         return image;
     }
 
-    /** 异步保存采集特征并防止重复提交；重复 ID 转入覆盖确认，成功后关闭录入页。 */
+    /**
+     * Save captured features asynchronously and prevent duplicate submissions; confirm overwriting a
+     * duplicate ID and close enrollment on success.
+     *
+     * 异步保存采集特征并防止重复提交；重复 ID 转入覆盖确认，成功后关闭录入页。
+     */
     private void save(AlertDialog dialog, FaceCaptureResult capture,
             String faceId, String group, boolean overwriteConfirmed) {
         if (saving) {
@@ -175,7 +205,11 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
         });
     }
 
-    /** 重复 ID 必须再次确认，确认后才调用统一的 saveFeature 覆盖已有记录。 */
+    /**
+     * A duplicate ID requires another confirmation before saveFeature replaces the existing record.
+     *
+     * 重复 ID 必须再次确认，确认后才调用统一的 saveFeature 覆盖已有记录。
+     */
     private void showOverwriteConfirmation(AlertDialog dialog, FaceCaptureResult capture,
             String faceId, String group) {
         if (overwriteDialog != null) {
@@ -190,25 +224,41 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
                 .show();
     }
 
-    /** 保存期间禁用弹窗的保存与重拍按钮，防止重复操作。 */
+    /**
+     * Disable save and retake buttons during saving to prevent repeated operations.
+     *
+     * 保存期间禁用弹窗的保存与重拍按钮，防止重复操作。
+     */
     private void setConfirmationEnabled(AlertDialog dialog, boolean enabled) {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(enabled);
         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(enabled);
     }
 
-    /** 把 SDK 技术错误映射成面向用户的提示，保留当前页面供用户处理。 */
+    /**
+     * Map SDK technical errors to user-facing messages while retaining the screen for recovery.
+     *
+     * 把 SDK 技术错误映射成面向用户的提示，保留当前页面供用户处理。
+     */
     private void showError(HiFaceError error) {
         Toast.makeText(this, SearchUi.errorText(error), Toast.LENGTH_LONG).show();
     }
 
-    /** 返回页面时重新打开人脸库，采集由相机首帧通知启动。 */
+    /**
+     * Reopen the face library on return; the camera's first-frame notification starts capture.
+     *
+     * 返回页面时重新打开人脸库，采集由相机首帧通知启动。
+     */
     @Override
     protected void onStart() {
         super.onStart();
         if (store == null) store = new FaceSearchStore(this);
     }
 
-    /** 页面不可见时停止分析并取消当前采集请求，待确认结果继续保留。 */
+    /**
+     * Stop analysis and cancel capture while hidden, retaining any result awaiting confirmation.
+     *
+     * 页面不可见时停止分析并取消当前采集请求，待确认结果继续保留。
+     */
     @Override
     protected void onStop() {
         super.onStop();
@@ -218,6 +268,8 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
             saving = false;
             if (confirmation != null) setConfirmationEnabled(confirmation, true);
         }
+        // Let submitted SQL finish; close this screen's connection in the background and reopen on demand
+        // after resume.
         // 已提交的 SQL 自然结束；后台关闭本页连接，恢复后再按需开库。
         if (store != null) {
             store.close();
@@ -225,7 +277,12 @@ public final class FaceSearchEnrollmentActivity extends CameraFlowActivity {
         }
     }
 
-    /** 关闭页面弹窗及其预览位图；请求和人脸库已在 onStop 清理，SDK 自动释放。 */
+    /**
+     * Close dialogs and preview bitmaps; onStop already cleaned requests and the database, and the SDK
+     * releases automatically.
+     *
+     * 关闭页面弹窗及其预览位图；请求和人脸库已在 onStop 清理，SDK 自动释放。
+     */
     @Override
     protected void onDestroy() {
         if (captureError != null) captureError.dismiss();

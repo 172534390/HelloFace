@@ -1,6 +1,7 @@
 #pragma once
 #include "hiface/hiface_linux.h"
 #include <array>
+#include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -41,6 +42,11 @@ struct Session {
     HiFaceSessionHandle handle = nullptr;
     Session() {
         HiFaceRuntimeConfigV1 runtime{sizeof(runtime), HIFACE_C_API_VERSION_V1, 0, 0};
+        if (const char* threads = std::getenv("HIFACE_CPU_THREADS")) {
+            require(std::string(threads) == "2" || std::string(threads) == "4",
+                "HIFACE_CPU_THREADS must be 2 or 4");
+            runtime.cpu_threads = threads[0] - '0';
+        }
         check(hiface_runtime_configure_v1(&runtime), "configure runtime");
         HiFaceConfigV1 config{};
         config.struct_size = sizeof(config);

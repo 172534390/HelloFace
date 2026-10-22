@@ -1,18 +1,29 @@
-# HiFace HarmonyOS · 0.0.3 Beta
+# HiFace HarmonyOS Integration Demo
 
 English | [简体中文](README.zh-CN.md)
 
-HarmonyOS API 20+, ARM64, DevEco Studio 26.
+SDK: **0.0.4 Beta**
 
-1. Open this directory and sync dependencies.
-2. Configure your Bundle Name, signing and device profile; run `demo` on a phone.
+On-device detection, capture, liveness, 1:1 comparison, 1:N/M:N search and face-library management.
 
-## Integrate
+**Model scope: The current model does not support face recognition for people under 12 and must not be used in financial scenarios.**
 
-Add `libs/hiface-0.0.3.har` as a local dependency. Await `whenReady()` before use. See the [SDK guide](SDK.md).
+## Run
 
-Examples: [camera](demo/src/main/ets/camera/CameraPreviewController.ets) · [flows](demo/src/main/ets/pages/RealtimeCameraDemo.ets) · [face library](demo/src/main/ets/search/FaceSearchLibraryDemo.ets).
-Demo data: `demo/src/main/resources/rawfile/face_search/`; image downloads require internet. The 1:1 reference uses HUKS encryption. HF1 and the SDK face database are unencrypted.
+1. Open this directory in DevEco Studio 26 and sync dependencies.
+2. Configure your bundle name, signing certificate and device profile.
+3. Run `demo` on an API 20+ arm64 phone. Phones require a signed HAP.
 
-The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
-Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
+## Project
+
+| Path | Purpose |
+|---|---|
+| `demo/` | Editable ArkTS examples |
+| `libs/hiface-0.0.4.har` | Binary SDK |
+| `AppScope/`, `hvigor/` | Required App and build configuration |
+
+Models are embedded in the HAR. Await `whenReady()` before using the SDK.
+
+Guides: [SDK](SDK.md) · [Demo](demo/README.md).
+
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).

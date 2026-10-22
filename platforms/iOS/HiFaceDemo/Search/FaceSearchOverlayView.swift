@@ -2,6 +2,7 @@ import Foundation
 import HiFace
 import SwiftUI
 
+/// Search overlay displays only currently valid scores; text and box colors follow Android Demo rules.
 /// 搜索专用 Overlay；框上只显示当前有效评分，文字与框色遵循 Android Demo 的规则。
 struct FaceSearchOverlayView: View {
     let overlay: FaceSearchOverlayState
@@ -24,6 +25,8 @@ struct FaceSearchOverlayView: View {
                     var x = CGFloat(face.bounds.x) * scale + offsetX
                     let width = CGFloat(face.bounds.width) * scale
                     if mirrored { x = size.width - x - width }
+                    // Widen drawing boxes only, never cross-frame matching bounds; association always uses original SDK
+                    // bounds.
                     // 只扩大绘制框，不参与跨帧匹配；关联逻辑始终使用 SDK 原始 bounds。
                     let rect = FaceOverlayLayout.expandedFaceRect(CGRect(
                         x: x,

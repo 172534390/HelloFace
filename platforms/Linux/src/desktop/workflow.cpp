@@ -84,6 +84,14 @@ void FaceWorkflow::stop() {
     check(hiface_session_search_stop_v1(session_.handle), "stop search");
     check(hiface_session_face_flow_stop_v1(session_.handle), "stop flow");
     mode_ = 'D'; boxes.clear();
+    if (enrollment_.pending()) aligned_preview.reset();
+    enrollment_.clear();
+}
+void FaceWorkflow::clearPageResults() {
+    stop(); image_first.reset(); image_second.reset(); aligned_preview.reset(); image_matches.clear(); clearPhotoSearch(); inference_ms = 0;
+}
+void FaceWorkflow::confirmEnrollment(const std::string& id, const std::string& group, const std::string& tag) {
+    enrollment_.save(database_, id, group, tag); recount(); status = "Enrollment confirmed: " + id;
 }
 void FaceWorkflow::pauseSearch() {
     require(mode_ == 'S' || mode_ == 'P', "Start search before pausing");
@@ -109,6 +117,7 @@ void FaceWorkflow::saveReference(const Feature& feature, const std::string& id) 
     const auto text = encodeFeature(feature);
     // Use the same persisted HF1 for the current and future process, avoiding a
     // full-precision current reference that differs after a restart.
+    // 当前进程与后续进程使用同一份持久化 HF1，避免当前全精度基准与重启后基准不一致。
     Feature persisted{};
     check(hiface_feature_decode_text_v1(text.data(), HIFACE_FEATURE_TEXT_LENGTH, persisted.data(), persisted.size()), "decode saved reference");
     atomicWrite((data_directory_ / "reference.hf1").string(), std::string(HIFACE_FEATURE_SPACE_ID) + '\n' + id + '\n' + text.data() + '\n');
@@ -120,8 +129,9 @@ void FaceWorkflow::selectReference(const std::string& id) {
     Feature feature{};
     check(hiface_feature_decode_text_v1(row.feature.c_str(), row.feature.size(), feature.data(), feature.size()), "decode reference");
     // Preserve the original Q7 text verbatim; do not quantize an existing HF1 again.
+    // 原样保留 Q7 文本，不对已有 HF1 再次量化。
     atomicWrite((data_directory_ / "reference.hf1").string(), std::string(HIFACE_FEATURE_SPACE_ID) + '\n' + row.id + '\n' + row.feature + '\n');
-    reference_ = feature; reference_id = row.id; has_reference_ = true; status = "Reference selected: " + id;
+    reference_ = feature; reference_id = row.id; has_reference_ = true; aligned_preview.reset(); status = "Reference selected: " + id;
 }
 void FaceWorkflow::clearReference() {
     stop(); std::filesystem::remove(data_directory_ / "reference.hf1");
@@ -142,7 +152,7 @@ void FaceWorkflow::beginFlow(char mode) {
     config.frontal_hold_ms = mode == 'C' || mode == 'E' ? HIFACE_CAPTURE_FRONTAL_HOLD_MS : HIFACE_LIVENESS_FRONTAL_HOLD_MS;
     config.min_face_size_pixels = HIFACE_FLOW_DEFAULT_MIN_FACE_SIZE_PIXELS;
     config.verification_threshold = settings_.verification_threshold;
-    config.multiple_faces_allowed = settings_.allow_multiple;
+    config.multiple_faces_allowed = (mode == 'L' || mode == 'V') && settings_.allow_multiple;
     if (mode == 'L' || mode == 'V') {
         config.action_count = settings_.actions.size();
         std::copy(settings_.actions.begin(), settings_.actions.end(), config.actions);
@@ -178,6 +188,7 @@ void FaceWorkflow::finishFlow() {
     check(hiface_session_face_flow_copy_result_v1(session_.handle, &result, feature.data(), feature.size(), preview.data(), preview.size()), "copy flow result");
     const char finished_mode = mode_;
     // Always release the completed Core flow, including when a later disk write fails.
+    // 即使后续磁盘写入失败，也必须释放已经结束的 Core 流程。
     stop();
     std::string message = outcome(result.outcome);
     if (result.flags & HIFACE_FLOW_RESULT_HAS_LIVENESS) message += " | liveness " + score(result.liveness_score);
@@ -188,9 +199,10 @@ void FaceWorkflow::finishFlow() {
         require(result.flags & HIFACE_FLOW_RESULT_HAS_FEATURE, "Capture returned no feature");
         const auto id = finished_mode == 'E' && !enrollment_id_.empty() ? enrollment_id_ : uniqueId(finished_mode == 'E' ? "person-" : "capture-");
         if (finished_mode == 'E') {
-            const auto text = encodeFeature(feature);
-            saveEntry(database_, {id, text.data(), enrollment_group_, enrollment_tag_}); recount();
-            message = "Enrolled " + id;
+            require(result.flags & HIFACE_FLOW_RESULT_HAS_PREVIEW, "Enrollment returned no aligned preview");
+            enrollment_.stage(feature); ++enrollment_generation_;
+            status = "Capture ready. Review the preview and confirm saving; nothing has been added yet.";
+            return;
         } else {
             if (result.flags & HIFACE_FLOW_RESULT_HAS_PREVIEW) {
                 const auto directory = data_directory_ / "captures"; std::filesystem::create_directories(directory);
@@ -204,7 +216,7 @@ void FaceWorkflow::finishFlow() {
     status = message;
 }
 void FaceWorkflow::process(const CameraFrame& input) {
-    if (mode_ == 'P' || importing_) return;
+    if (mode_ == 'P' || importing_ || enrollment_.pending()) return;
     const auto begin = monotonicMilliseconds(); const auto frame = input.view();
     if (mode_ == 'S') {
         HiFaceSearchBatchHandle raw = nullptr;
@@ -280,8 +292,8 @@ void FaceWorkflow::imageOperation(const std::string& operation, const std::strin
     } else if (operation == "reference") {
         saveReference(feature, id.empty() ? uniqueId("photo-") : id); status = "Photo reference saved: " + reference_id;
     } else if (operation == "enroll") {
-        require(!id.empty(), "Enter a face ID for photo enrollment");
-        const auto text = encodeFeature(feature); saveEntry(database_, {id, text.data(), group, tag}); recount(); status = "Enrolled " + id;
+        enrollment_.stage(feature); ++enrollment_generation_;
+        status = "Photo capture ready. Review the preview and confirm saving; nothing has been added yet.";
     } else if (operation == "search") {
         HiFaceSearchResultsHandle raw = nullptr;
         check(hiface_search_query_v1(database_.handle, feature.data(), feature.size(), settings_.group.c_str(), settings_.tag.c_str(), 5, settings_.search_threshold, &raw), "search photo");

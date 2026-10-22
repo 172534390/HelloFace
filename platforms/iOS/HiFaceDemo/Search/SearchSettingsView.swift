@@ -2,6 +2,8 @@ import HiFace
 import SwiftUI
 
 enum DemoFaceSearchConfiguration {
+    /// Start a new round immediately after a match by default; this affects only the next successful search
+    /// round.
     /// 默认匹配成功后立即开始下一轮；仅影响成功后的下一轮搜索。
     static let successIntervalMilliseconds = 0
     static let recommended = (try? FaceSearchSessionConfiguration(

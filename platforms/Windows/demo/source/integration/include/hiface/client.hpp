@@ -24,7 +24,7 @@ struct FlowOptions {
     std::string reference;
 };
 struct DetailedFace {
-    HiFaceFaceV1 face{}; // mesh pointer always null; owned points are below
+    HiFaceFaceV1 face{}; // mesh pointer always null; owned points are below / mesh 指针始终为空，独占的关键点保存在下方。
     std::vector<HiFaceMeshPointV1> mesh;
 };
 struct CaptureResult { Feature feature{}; Image preview; std::string text; };
@@ -56,6 +56,7 @@ struct FrameUpdate {
 
 // Demo integration helper over the stable C ABI DLL. One serialized caller per owner.
 // Results own their data; no camera, UI, file picker or application policy.
+// 基于稳定 C ABI DLL 的 Demo 接入辅助层；每个持有者仅允许一个串行调用方。结果独占数据，不包含相机、UI、选图或应用策略。
 class Client {
 public:
     explicit Client(const std::filesystem::path& database);
@@ -78,6 +79,7 @@ public:
     CaptureResult captureWithPreview(const Image& image);
     // Detect once, largest first, without liveness. Per-face errors do not
     // suppress other faces. No faces returns an empty vector successfully.
+    // 单次检测，最大脸优先，不执行活体；单张脸失败不影响其他脸，无脸时成功返回空向量。
     std::vector<ImageFaceCapture> captureFaces(const Image& image,
         uint32_t maximum = HIFACE_MAX_FACES, bool previews = true);
     void insertFeature(const std::string& id, const Feature& feature);

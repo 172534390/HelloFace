@@ -4,7 +4,11 @@ import { DemoPageHeader } from '../ui/DemoPageHeader';
 import { common } from '@kit.AbilityKit';
 import { CameraDemoSettings, CameraDemoSettingsStore } from './CameraDemoSettings';
 
-/** 所有实时 Demo 共用的分辨率与坐标镜像校正设置。 */
+/**
+ * Shared resolution and coordinate-mirroring settings for all real-time Demos.
+ *
+ * 所有实时 Demo 共用的分辨率与坐标镜像校正设置。
+ */
 @Component
 export struct CameraSettingsDemo {
   onExit: () => void = () => {};

@@ -1,5 +1,6 @@
 #!/bin/sh
 # Sourced by launchers; supports an extracted package and the dual-architecture Demo.
+# 由启动脚本加载，兼容解压后的独立包和双架构 Demo。
 resolve_hiface_runtime() {
     if [ "$(uname -s)" != Linux ]; then
         echo "Run this Linux package on Ubuntu 22.04+ (x86_64 or ARM64)." >&2

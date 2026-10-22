@@ -1,5 +1,7 @@
 import Foundation
 
+/// Quality presets for face analysis; dimensions are selection budgets, not exact camera-format
+/// requirements.
 /// 面向人脸分析的画质档位；尺寸是选型预算，不要求镜头提供完全相同的格式。
 enum CameraAnalysisResolution: String, CaseIterable, Identifiable, Sendable {
     case low
@@ -66,6 +68,8 @@ enum CameraFrameRatePolicy {
         let framesPerSecond: Double
     }
 
+    /// Preserve supported target rates; prefer the lowest integer-multiple fallback to avoid extra drops
+    /// from phases such as 7.5/5.
     /// 保持支持的目标帧率；回退优先选最低的目标整倍数，避免 7.5/5 等相位导致多丢帧。
     static func select(target: Double, ranges: [CameraFrameRateRange]) -> Selection? {
         guard target.isFinite, target > 0 else { return nil }
@@ -79,6 +83,8 @@ enum CameraFrameRatePolicy {
                 if range.contains(multiple), aligned == nil || multiple < aligned!.framesPerSecond {
                     aligned = Selection(rangeIndex: index, framesPerSecond: multiple)
                 }
+                // Without a usable integer multiple, retain the range ceiling rather than worsening sampling intervals
+                // to reduce capture.
                 // 没有可用整倍数时保留该范围上限，不能为了少采集而进一步恶化探测间隔。
                 if above == nil || range.maximum < above!.framesPerSecond {
                     above = Selection(rangeIndex: index, framesPerSecond: range.maximum)
@@ -113,6 +119,9 @@ struct CameraFormatOption: Sendable {
 }
 
 enum CameraResolutionPolicy {
+    /// Prefer support for all target rates, then the active rate; fixed-rate cameras can still throttle SDK
+    /// delivery. Choose the clearest format within budget and the wider field of view at equal dimensions.
+    /// If none fits the budget, choose the smallest SDK-compatible format without exceeding SDK limits.
     /// 优先支持全部目标帧率，其次活跃帧率；固定帧率相机仍可由送帧节流控制分析频率。
     /// 在档位预算内取最清晰的格式；相同尺寸优先更宽的视野，避免额外裁切。
     /// 若镜头没有预算内的格式，取 SDK 允许的最小格式，始终不超过 SDK 上限。
@@ -169,6 +178,7 @@ enum CameraZoomPolicy {
     }
 }
 
+/// Demo device-capture preferences, outside HiFace SDK inference configuration.
 /// Demo 的设备采集偏好；不属于 HiFace SDK 推理配置。
 struct DemoCameraSettings: Sendable {
     static let resolutionKey = "HiFaceDemo.camera.analysisResolution"

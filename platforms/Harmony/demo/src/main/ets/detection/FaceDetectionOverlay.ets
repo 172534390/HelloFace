@@ -2,6 +2,7 @@ import { DetectedFace, FaceDetectionResult } from 'hiface';
 import { OutlinedCanvasText } from '../ui/OutlinedCanvasText';
 import { PreviewCoordinateTransform } from '../ui/PreviewCoordinateTransform';
 
+// Keep contour indices and five-landmark styles consistent with Android FaceDetectionOverlayView.
 // 与 Android FaceDetectionOverlayView 的轮廓索引及五点样式保持一致。
 const CONTOURS: number[][] = [
   [61, 146, 146, 91, 91, 181, 181, 84, 84, 17, 17, 314, 314, 405, 405, 321, 321, 375, 375, 291, 61, 185, 185, 40, 40, 39, 39, 37, 37, 0, 0, 267, 267, 269, 269, 270, 270, 409, 409, 291, 78, 95, 95, 88, 88, 178, 178, 87, 87, 14, 14, 317, 317, 402, 402, 318, 318, 324, 324, 308, 78, 191, 191, 80, 80, 81, 81, 82, 82, 13, 13, 312, 312, 311, 311, 310, 310, 415, 415, 308],
@@ -17,6 +18,7 @@ export class FaceDetectionOverlay {
     const transform: PreviewCoordinateTransform = PreviewCoordinateTransform.fit(
       detection.imageWidth, detection.imageHeight, width, height, mirrored);
     context.save();
+    // Specify Canvas font sizes in vp; physical 11 px does not match Android's default 11 sp.
     // Canvas 字体必须显式使用 vp；11px 是物理像素，无法匹配 Android 的 11sp 默认字号。
     context.font = 'bold 11vp sans-serif';
     context.lineWidth = 2;

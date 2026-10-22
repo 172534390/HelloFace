@@ -1,6 +1,11 @@
 import { FaceSearchListener, FaceSearchFrame, FaceSearchProgress, FaceSearchResult, HiFaceError } from 'hiface';
 
-/** 将 SDK 搜索监听器适配为页面闭包，与 Android Activity 直接实现监听器的职责相同。 */
+/**
+ * Adapt SDK search listeners to screen closures, equivalent to Android Activities implementing
+ * listeners directly.
+ *
+ * 将 SDK 搜索监听器适配为页面闭包，与 Android Activity 直接实现监听器的职责相同。
+ */
 export class DemoSearchListener implements FaceSearchListener {
   private readonly frameHandler: (frame: FaceSearchFrame) => void;
   private readonly progressHandler: (progress: FaceSearchProgress) => void;

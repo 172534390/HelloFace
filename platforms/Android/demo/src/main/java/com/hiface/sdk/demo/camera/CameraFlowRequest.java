@@ -4,9 +4,18 @@ import com.hiface.sdk.common.FaceRequest;
 
 import java.util.Objects;
 
-/** 单次相机请求的所有权。状态在主线程修改，分析线程只读取 active。 */
+/**
+ * Ownership of one camera request. The main thread mutates state; the analysis thread only reads
+ * active.
+ *
+ * 单次相机请求的所有权。状态在主线程修改，分析线程只读取 active。
+ */
 public final class CameraFlowRequest {
-    /** Demo 支持 API 23，不依赖 API 24 才提供的 java.util.function.Supplier。 */
+    /**
+     * The Demo supports API 23 and does not depend on java.util.function.Supplier, introduced in API 24.
+     *
+     * Demo 支持 API 23，不依赖 API 24 才提供的 java.util.function.Supplier。
+     */
     @FunctionalInterface
     public interface Starter {
         FaceRequest start();
@@ -24,6 +33,7 @@ public final class CameraFlowRequest {
         active = true;
         try {
             FaceRequest next = Objects.requireNonNull(starter.start(), "request");
+            // Do not retain an invalid handle even if startup fails, completes, or is cancelled synchronously.
             // 即便启动时同步失败/完成/取消，也不能重新持有已经失效的句柄。
             if (active) request = next;
             else next.cancel();

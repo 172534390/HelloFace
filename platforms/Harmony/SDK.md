@@ -2,11 +2,11 @@
 
 ## Installation
 
-The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
-
-The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).
+**Model scope: The current model does not support face recognition for people under 12 and must not be used in financial scenarios.**
 
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
+
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).
 
 | Requirement | Supported |
 |---|---|
@@ -17,10 +17,10 @@ Face search requires clear camera images; outdoor deployments require a camera w
 For direct delivery, copy the versioned HAR into the application and configure the module's `oh-package.json5`:
 
 ```json5
-{ "dependencies": { "hiface": "file:./libs/hiface-0.0.3.har" } }
+{ "dependencies": { "hiface": "file:./libs/hiface-0.0.4.har" } }
 ```
 
-After the same version is approved in the OpenHarmony package registry, use `ohpm install hiface@0.0.3`. Direct and registry delivery must use the same version and HAR SHA-256. Never replace an artifact already delivered under a version number. Sign the host HAP/APP with your own credentials; SDK HARs do not include Demo signing files or private keys.
+After the same version is approved in the OpenHarmony package registry, use `ohpm install hiface@0.0.4`. Direct and registry delivery must use the same version and HAR SHA-256. Never replace an artifact already delivered under a version number. Sign the host HAP/APP with your own credentials; SDK HARs do not include Demo signing files or private keys.
 
 ## Initialization and ownership
 
@@ -105,7 +105,7 @@ SQLite stores the original 450-byte Q7 payload and returns complete HF1 without 
 
 `close()` rejects new operations immediately and releases SQLite/cache after started work; queued work returns `CLOSED`. Await successful saving before closing. Search sessions own their own connections.
 
-HF1 and SQLite are unencrypted. The host manages consent, access control, encryption, retention and deletion.
+The SDK does not encrypt SQLite. The host owns biometric consent, access control, encryption, retention, deletion, and backup policies. Retain the SDK/model commercial license, `CHANGELOG.md`. Commercial use requires written authorization; deliver version identifiers and `SHA256SUMS` with release artifacts.
 ## Multi-face image search
 
 Use `await sdk.capture().facesFromRgba(image)`. The result contains up to ten `FaceImageCapture` values with input pixel bounds and independent captures/errors.
@@ -115,3 +115,27 @@ Pass each successful HF1 to `FaceSearchDatabase.search` for static M:N search. C
 The Demo home screen includes Image Face Search: album selection, original-image boxes, identity/score labels,
 aligned thumbnails and detected/matched counts. It uses all records, Top-1 and threshold 0.80, without liveness.
 Image search preserves original resolution up to the SDK limit of 4096px per side. Only oversized photos are reduced proportionally; odd last rows/columns are cropped by 1px. The size gate uses the resulting pixels. Comparison and bulk import keep their existing decoding limits.
+
+## IR-only liveness
+
+FLIR accepts upright, unmirrored GRAY8 IR measurements, 1..4096 pixels per side,
+including odd dimensions and row padding. Supply a detected face box in this IR image
+(x/y + width/height, at least 10x10). Camera access, IR face detection, illumination,
+and multiple-face handling belong to the host. RGB converted to gray is not IR.
+
+```typescript
+const frame = new InfraredFrame(grayBuffer, width, height, rowStride,
+  faceX, faceY, faceWidth, faceHeight);
+const result = await sdk.liveness().evaluateInfrared(frame, calibratedThreshold);
+```
+
+Calibrate the explicit Float32 real threshold on the target IR camera. `realScore` is
+higher for live faces, `spoofScore = 1-realScore`; pass means `realScore >= threshold`.
+Check technical errors before reading the result. Android calls are synchronous on a
+worker thread; iOS/Harmony calls use the bounded background queue. Input is owned/copied.
+This entry does not change the RGB camera liveness/search flows. iOS requires accessible
+IR image data; the SDK does not obtain the internal Face ID IR stream.
+
+FLIR's published 99.8% attack interception and 97.6% genuine acceptance are private-set
+publisher results, not this SDK's target-camera accuracy. Strong light and 3D heads are
+known limitations. Retain the FLIR MIT notice in the SDK license; HiFace licensing remains separate.

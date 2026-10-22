@@ -3,7 +3,12 @@ export interface CameraFrameRateRange {
   readonly max: number;
 }
 
-/** 只请求上报范围内的固定帧率；硬件回退高于目标时仍需应用侧限流。 */
+/**
+ * Request only advertised fixed frame rates; retain app throttling if hardware falls back above the
+ * target.
+ *
+ * 只请求上报范围内的固定帧率；硬件回退高于目标时仍需应用侧限流。
+ */
 export class CameraFrameRatePolicy {
   static select(ranges: Array<CameraFrameRateRange>, targetFps: number): CameraFrameRateRange | undefined {
     if (!Number.isInteger(targetFps) || targetFps <= 0) {
@@ -20,6 +25,8 @@ export class CameraFrameRatePolicy {
       }
       if (range.max < targetFps) lowerFps = Math.max(lowerFps, range.max);
       if (range.min > targetFps) {
+        // Integer multiples avoid phase mismatch between hardware and software gates: for [7,12] and 5 FPS,
+        // choose 10 rather than 7.
         // 整倍数可避免硬件与软件门禁错相，如 [7,12] 对 5 FPS 选 10 而非 7。
         const multiple: number = Math.ceil(range.min / targetFps) * targetFps;
         if (multiple <= range.max) multipleFps = Math.min(multipleFps, multiple);

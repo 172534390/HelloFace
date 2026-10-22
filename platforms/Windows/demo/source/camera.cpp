@@ -54,7 +54,7 @@ public:
             }
             if (flags & (MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED | MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED))
                 state_->format_changed = true;
-            if (sample) { state_->latest = sample; ++state_->captured; } // keep only latest
+            if (sample) { state_->latest = sample; ++state_->captured; } // keep only latest / 仅保留最新帧。
             reader = state_->reader;
             state_->changed.notify_one();
         }
@@ -124,7 +124,7 @@ struct Camera::Impl {
         {
             std::lock_guard<std::mutex> lock(state->mutex);
             state->running = false; state->latest.Reset();
-            reader = std::move(state->reader); // break callback/reader ownership cycle
+            reader = std::move(state->reader); // break callback/reader ownership cycle / 打破回调与读取器之间的循环持有。
             state->changed.notify_all();
         }
         if (reader) reader->Flush(MF_SOURCE_READER_ALL_STREAMS);
@@ -197,6 +197,7 @@ Camera::Camera(unsigned device_index, const std::wstring& symbolic_link, unsigne
             || std::min(width, height) > HIFACE_MAX_CAMERA_FRAME_SHORT_SIDE) continue;
         // Keep analysis/preview modest. Prefer native NV12, then YUY2/MJPEG at
         // the closest advertised resolution to 640x480.
+        // 保持适中的分析与预览尺寸；优先原生 NV12，再选最接近 640x480 的已声明 YUY2/MJPEG 规格。
         if (subtype != MFVideoFormat_NV12 && subtype != MFVideoFormat_YUY2 && subtype != MFVideoFormat_MJPG) continue;
         const uint64_t area = uint64_t(width) * height;
         const uint64_t preferred_area = uint64_t(preferred_width) * preferred_height;
@@ -224,6 +225,7 @@ Camera::Camera(unsigned device_index, const std::wstring& symbolic_link, unsigne
         + " range=" + std::to_string(impl_->range));
     // Missing camera color metadata has a documented Demo fallback: VIDEO/601.
     // This is explicit adapter policy, never a width-based guess inside Core.
+    // 缺少相机颜色元数据时，Demo 明确回退到 VIDEO/601；这是适配层策略，Core 不按宽度猜测。
     {
         std::lock_guard<std::mutex> lock(impl_->state->mutex);
         impl_->state->reader = reader; impl_->state->running = true;
@@ -277,7 +279,7 @@ bool Camera::next(CameraFrame& frame, std::chrono::milliseconds timeout) {
             std::memcpy(frame.nv12.data() + static_cast<size_t>(y) * frame.width,
                 bytes + static_cast<size_t>(y) * pitch, frame.width);
     }
-    frame.view(); // validate negotiated geometry before accessing preview pixels
+    frame.view(); // validate negotiated geometry before accessing preview pixels / 访问预览像素前先校验协商后的尺寸布局。
     return true;
 }
 }

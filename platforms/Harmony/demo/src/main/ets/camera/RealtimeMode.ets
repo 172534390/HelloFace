@@ -1,4 +1,7 @@
 /**
+ * Demo routing modes for the shared camera host, outside the SDK API. Values correspond to Android
+ * detection, capture, verification, liveness, search, and search-enrollment screens.
+ *
  * Demo 页面路由到共享相机宿主时使用的模式；不是 SDK API。
  * 每个枚举值分别对应 Android 的检测、采集、验证、活体、搜索或搜索录入页面。
  */

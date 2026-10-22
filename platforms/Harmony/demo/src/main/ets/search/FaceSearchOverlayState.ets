@@ -54,6 +54,7 @@ class HeldSearchScore {
     const matched: boolean = this.face.thresholdPassed && this.face.faceId !== undefined;
     const color: string = this.spoofRejected ? '#FF3C3C' : matched && !this.finalResult ?
       '#A4B4C9' : matched ? '#28DC64' : this.face.similarity === undefined ? '#A4B4C9' : '#FF3C3C';
+    // Only an actual lookup score can establish mismatch; low scores remain in SDK results.
     // 只有实际查库评分才能判定未匹配，低分仍保留在 SDK 结果中。
     const identity: string = matched ? this.face.faceId! :
       this.face.similarity !== undefined ? DemoL10n.text("未匹配") : '';
@@ -69,7 +70,12 @@ class HeldSearchScore {
   }
 }
 
-/** 与 Android OverlayState 一致：坐标始终取最新帧，评分仅短时且无歧义地关联。 */
+/**
+ * Match Android OverlayState: always use latest-frame coordinates and associate scores only briefly
+ * and unambiguously.
+ *
+ * 与 Android OverlayState 一致：坐标始终取最新帧，评分仅短时且无歧义地关联。
+ */
 export class FaceSearchOverlayState {
   private displayed: FaceSearchFrame | undefined = undefined;
   private scores: Array<HeldSearchScore | undefined> =
@@ -90,7 +96,12 @@ export class FaceSearchOverlayState {
     return this.scores[index]?.visual() ?? UNSCORED_VISUAL;
   }
 
-  /** 当前画面或评分中最早的显示截止时间；无可见人脸时不安排刷新。 */
+  /**
+   * Earliest display deadline among current imagery and scores; schedule no refresh without visible
+   * faces.
+   *
+   * 当前画面或评分中最早的显示截止时间；无可见人脸时不安排刷新。
+   */
   expiresAt(): number {
     if (this.displayed === undefined || this.displayed.faces.length === 0) return 0;
     let deadline: number = this.frameDeadline;
@@ -104,6 +115,7 @@ export class FaceSearchOverlayState {
     if (frame.frameId < this.newestFrameId) return false;
     const expired: boolean = this.expire(now);
     const sameFrame: boolean = frame.frameId === this.newestFrameId;
+    // A late score for the same frame must not redisplay already expired imagery.
     // 已超时消失的画面不能被同一帧晚到的评分回调重新显示。
     if (sameFrame && this.displayed === undefined) return expired;
     const previous: FaceSearchFrame | undefined = this.displayed;
@@ -120,6 +132,7 @@ export class FaceSearchOverlayState {
       const old: HeldSearchScore | undefined = previousIndex < 0 ? undefined : this.scores[previousIndex];
       if (face.similarity !== undefined && frame.frameId > this.rejectedThrough) {
         const bit: number = 1 << index;
+        // Duplicate scoring for the same frame must not extend label lifetime indefinitely.
         // 同一帧可能重复上报评分，不能借此无限延长标签显示时间。
         next[index] = (this.scoredThisFrame & bit) !== 0 ? old :
           new HeldSearchScore(face, frame.frameId, now + SCORE_HOLD_MILLIS);
@@ -139,6 +152,8 @@ export class FaceSearchOverlayState {
     for (let index: number = 0; index < this.scratch.length; index += 1) {
       this.scratch[index] = undefined;
     }
+    // Empty frames still advance frameId to prevent late scores from reviving boxes, without repeatedly
+    // submitting empty Canvas draws.
     // 空帧仍推进 frameId，防止晚到评分复活旧框，但无需不断提交空 Canvas 绘制。
     return expired || wasVisible || frame.faces.length > 0;
   }
@@ -153,6 +168,8 @@ export class FaceSearchOverlayState {
     const spoofRejected: boolean = result.endReason === FaceSearchEndReason.SPOOF_DETECTED;
     const matched: boolean = frame.faces.some((face: FaceSearchFace): boolean => face.thresholdPassed);
     if (spoofRejected) {
+      // Retain this batch's identity score for display, but do not associate old identity or color with the
+      // current box.
       // 保留本批身份分数用于展示，但旧身份和颜色不能继续关联到当前框。
       changed = this.rejectScoresThrough(frameId - 1) || changed;
       this.rejectedThrough = Math.max(this.rejectedThrough, frameId);
@@ -171,6 +188,8 @@ export class FaceSearchOverlayState {
         changed = true;
       }
     }
+    // Liveness rejection may finish before lookup scoring; supplement the current box only for a single
+    // face in the same frame.
     // 活体拒绝可能在查库评分前结束；只允许单人同帧结果补到当前框。
     if (spoofRejected && !updated && frameId === this.newestFrameId &&
       (this.scoredThisFrame & 1) === 0 && frame.faces.length === 1 &&
@@ -197,7 +216,11 @@ export class FaceSearchOverlayState {
     return changed;
   }
 
-  /** 当前失败轮次使旧评分失效，后续晚到的同帧评分也不能重新出现。 */
+  /**
+   * A failed round invalidates old scores; later callbacks for that same frame cannot revive them.
+   *
+   * 当前失败轮次使旧评分失效，后续晚到的同帧评分也不能重新出现。
+   */
   rejectScores(): boolean {
     return this.rejectScoresThrough(this.newestFrameId);
   }

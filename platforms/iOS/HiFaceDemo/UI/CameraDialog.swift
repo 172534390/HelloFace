@@ -1,6 +1,8 @@
 import SwiftUI
 import UIKit
 
+/// White confirmation card matching Android, without translucent material that reveals the dark camera.
+/// Scroll tall content within the safe area and let short content size naturally.
 /// 与 Android 采集确认框一致的白色卡片；不使用会透出相机暗色的毛玻璃材质。
 /// 内容过高时在安全区内滚动，短内容保持自适应高度。
 struct CameraDialog<Content: View, Actions: View>: View {
@@ -71,6 +73,8 @@ struct CameraDialog<Content: View, Actions: View>: View {
         .foregroundStyle(Color.primary)
         .tint(DemoTheme.contentAccent)
         .buttonBorderShape(.roundedRectangle(radius: 12))
+        // Override only card content so the dark camera screen does not darken inputs, secondary text, or
+        // keyboard.
         // 只覆盖卡片内容，避免深色相机页把输入框、次要文字和键盘变成深色。
         .environment(\.colorScheme, .light)
         .accessibilityAddTraits(.isModal)
@@ -85,6 +89,8 @@ struct CameraDialog<Content: View, Actions: View>: View {
         scrollRequest += 1
         let request = scrollRequest
         guard let scrollTarget else { return }
+        // Wait for keyboard and system cursor scrolling, then reveal the complete input region including its
+        // label and padding.
         // 等键盘和系统的光标滚动完成，再把包含标签与内边距的整块输入区移入视口。
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             guard scrollRequest == request else { return }
@@ -173,6 +179,8 @@ private struct CameraDialogActionsHeightKey: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
+/// Use opaque white cards for app prompts while retaining dark preview and readable status bars. The
+/// modal blocks underlying actions and VoiceOver; the caller explicitly updates dismissal state.
 /// 应用内提示统一用不透明白色卡片，窗口仍可保留深色预览和可读的状态栏。
 /// 模态层阻止底层操作和 VoiceOver 穿透；关闭动作由调用处显式更新状态。
 extension View {
@@ -203,6 +211,8 @@ extension View {
     }
 }
 
+/// Use brand green for ordinary actions, a light background for cancel, and system-red semantics for
+/// destructive actions such as deletion.
 /// 普通操作以品牌绿突出，取消使用浅底，删除等破坏性操作保留系统红色语义。
 private struct DemoDialogButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled

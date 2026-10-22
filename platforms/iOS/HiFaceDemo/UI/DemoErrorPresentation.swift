@@ -1,6 +1,8 @@
 import Foundation
 import HiFace
 
+/// Counterpart of Android DemoErrorUi: screens depend only on stable error codes, not changing low-
+/// level English messages.
 /// 对应 Android `DemoErrorUi`：页面只依赖稳定错误码，避免直接展示可能变化的底层英文信息。
 enum DemoErrorPresentation {
     static func message(for error: Error) -> String {
@@ -28,6 +30,8 @@ enum DemoErrorPresentation {
         }
     }
 
+    /// Configuration, model, database, and lifecycle errors require fixing the cause; repeating the same
+    /// request is ineffective.
     /// 配置、模型、数据库和生命周期错误需要先修复原因，重复执行同一请求没有意义。
     static func isRetryable(_ error: HiFaceError) -> Bool {
         switch error.code {
@@ -38,6 +42,8 @@ enum DemoErrorPresentation {
         }
     }
 
+    /// Match Android: ordinary guided enrollment automatically starts a new request only for transient
+    /// frame-processing failures.
     /// 与 Android 一致：普通引导录入只对偶发帧处理失败自动创建下一次请求。
     static func shouldRestartCapture(_ error: HiFaceError) -> Bool {
         error.code == .processingFailed

@@ -1,8 +1,12 @@
 import Foundation
 import HiFace
 
+/// Counterpart of Android FaceSearchStatusUi: show stage guidance on screen and individual results on
+/// face boxes.
 /// 对应 Android `FaceSearchStatusUi`：页面显示阶段引导，逐脸结果留在人脸框上。
 enum FaceSearchPresentation {
+    /// Match Android: resume only valid sessions with transient failures; startup rejection requires
+    /// reentry.
     /// 与 Android 一致：仅恢复暂时失败的有效会话，启动拒绝需重新进入。
     static func canResumeSearch(_ error: HiFaceError) -> Bool {
         switch error.code {

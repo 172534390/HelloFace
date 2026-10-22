@@ -4,7 +4,11 @@ import { FaceAction, FaceFlowProgress, FaceFlowStage, FaceFlowOutcome } from 'hi
 const ACTION_TIMEOUT_MILLIS: number = 3000;
 const FACE_ACQUISITION_TIMEOUT_MILLIS: number = 10000;
 
-/** 与 Android FaceFlowUi / CaptureStatusUi 对应的流程提示。 */
+/**
+ * Flow guidance corresponding to Android FaceFlowUi / CaptureStatusUi.
+ *
+ * 与 Android FaceFlowUi / CaptureStatusUi 对应的流程提示。
+ */
 export class FaceFlowUi {
   static progressTitle(progress: FaceFlowProgress, capture: boolean): string {
     if (progress.stage === FaceFlowStage.WAITING_FOR_FACE) {

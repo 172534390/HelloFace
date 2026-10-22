@@ -17,7 +17,11 @@ import com.hiface.sdk.flow.FaceFlowProgress;
 import com.hiface.sdk.flow.FaceFlowResult;
 import com.hiface.sdk.liveness.FaceLivenessConfig;
 
-/** 动作活体与静默活体组合演示。 */
+/**
+ * Combined demonstration of action and passive liveness.
+ *
+ * 动作活体与静默活体组合演示。
+ */
 public final class FaceLivenessActivity extends CameraFlowActivity {
     private static final int ACTION_COUNT = 3;
     private AlertDialog dialog;
@@ -32,15 +36,22 @@ public final class FaceLivenessActivity extends CameraFlowActivity {
         initializeCameraSdk();
     }
 
-    /** 每次启动创建一轮完整挑战；相机未就绪或已有请求时不重复启动。 */
+    /**
+     * Create a complete challenge on each start; do not start again before the camera is ready or while a
+     * request is active.
+     *
+     * 每次启动创建一轮完整挑战；相机未就绪或已有请求时不重复启动。
+     */
     @Override
     protected void startCameraFlow() {
         if (!canStartCameraFlow()
                 || (dialog != null && dialog.isShowing())) return;
+        // Each start or retry chooses three distinct random actions, then runs both passive-liveness models
+        // after returning to a frontal pose.
         // 每次开始或重试随机选择三个不重复动作，完成并回正后执行双模型静默活体。
         FaceLivenessConfig config = FaceLivenessConfig.builder()
                 .actions(FaceFlowUi.randomActions(ACTION_COUNT))
-                .allowMultipleFaces(true) // 多人画面继续处理最大人脸
+                .allowMultipleFaces(true) // 多人画面继续处理最大人脸 / Continue with the largest face when multiple faces are visible.
                 .build();
 
         startCameraFlowRequest(() -> hiFaceSdk.liveness().startCameraLiveness(config, new FaceFlowListener() {
@@ -57,12 +68,15 @@ public final class FaceLivenessActivity extends CameraFlowActivity {
             @Override
             public void onResult(@NonNull FaceFlowResult result) {
                 if (!finishCameraFlow()) return;
+                // The SDK validates the liveness terminal state: a passing result always contains a valid score.
                 // SDK 已校验纯活体终态：通过时必有有效分数。
                 boolean passed = result.isPassed();
                 captureOverlay.setStatusText(passed
                         ? R.string.liveness_result_passed : R.string.liveness_result_rejected);
                 String message;
                 if (passed) {
+                    // A liveness PASSED result always has an aggregated score; direct unboxing exposes SDK contract
+                    // violations.
                     // 纯活体的 PASSED 必然已产生聚合分数；直接解包能暴露 SDK 契约违反。
                     float score = result.getLivenessScore();
                     message = getString(
@@ -72,6 +86,8 @@ public final class FaceLivenessActivity extends CameraFlowActivity {
                 } else {
                     String rejectionReason = FaceFlowUi.rejectionMessage(
                             FaceLivenessActivity.this, result.getOutcome());
+                    // SPOOF_DETECTED contains a score; early action timeout or face loss shows only the rejection reason.
+                    // null means passive liveness produced no score, not a score of zero.
                     // SPOOF_DETECTED 已产生分数；动作超时、丢脸等提前结束时只展示拒绝原因。
                     // null 表示未产生静默活体分数，不能当作 0 分展示。
                     Float livenessScore = result.getLivenessScore();
@@ -79,11 +95,15 @@ public final class FaceLivenessActivity extends CameraFlowActivity {
                             ? rejectionReason
                             : getString(R.string.liveness_score_format, rejectionReason, livenessScore);
                 }
+                // All business outcomes allow retry, regardless of whether liveness passed.
                 // 业务结果均允许重试，与活体是否通过无关。
                 showResultDialog(getString(R.string.liveness_result_title), message, true);
             }
 
             /**
+             * Invalid parameters or an underlying SDK failure prevented completion, so no business decision was
+             * produced.
+             *
              * 传入参数错误，SDK底层异常导致SDK 无法完成这次请求，没有形成业务结论
              */
             @Override
@@ -101,6 +121,8 @@ public final class FaceLivenessActivity extends CameraFlowActivity {
     private void switchCamera() {
         cameraPreview.pauseAnalysis();
         boolean switched = cameraPreview.switchCamera();
+        // For testing lens switches only; keep the current liveness request processing frames from the new
+        // camera.
         // 仅用于测试镜头切换，保持当前活体请求继续处理新相机画面。
         if (isCameraFlowRunning()) cameraPreview.resumeAnalysis();
         if (!switched) {

@@ -86,6 +86,12 @@ export class FaceSearchImportSummary {
 }
 
 /**
+ * Bulk importer for Demo rawfiles, not SDK HAR data. Parse feature objects incrementally and commit
+ * 1,000 at a time rather than creating 10,000 ArkTS objects. Prefetch at most five images,
+ * decode/extract in download-completion order, and save every 100. Retain one decoded image; bound
+ * compressed data with the prefetch queue. Replace demonstration URLs with authorized test images and
+ * use a CDN in business integration.
+ *
  * demo 模块 rawfile 专用批量导入器，数据不属于 SDK HAR。特征 JSON 逐对象解析并按 1000 条提交，
  * 避免同时创建 10000 个 ArkTS 对象；
  * 图片最多并发预取 5 张，按下载完成顺序逐张解码和提取特征，每 100 条写库；
@@ -114,13 +120,22 @@ export class FaceSearchDemoImporter {
     });
   }
 
-  /** 页面取消时主动销毁 HTTP 请求，不等 20 秒超时；不能取消已提交的数据库批次。 */
+  /**
+   * Destroy HTTP requests on cancellation instead of waiting 20 seconds; already submitted database
+   * batches cannot be cancelled.
+   *
+   * 页面取消时主动销毁 HTTP 请求，不等 20 秒超时；不能取消已提交的数据库批次。
+   */
   cancel(): void {
     this.stopped = true;
     this.requestStop();
   }
 
-  /** 停止新输入；在途提取结束后，导入循环仍可保存尾批并返回统计。 */
+  /**
+   * Stop new input; after in-flight extraction finishes, save the final batch and return statistics.
+   *
+   * 停止新输入；在途提取结束后，导入循环仍可保存尾批并返回统计。
+   */
   requestStop(): void {
     this.stopRequested = true;
     this.wakeStop();
@@ -203,11 +218,15 @@ export class FaceSearchDemoImporter {
           (value: PendingDownload): boolean => value.token === downloaded.token);
         if (completedIndex < 0) throw new Error('Completed image download is not pending');
         pending.splice(completedIndex, 1);
+        // Consume in completion order and replenish before decoding, preventing a slow request from blocking
+        // later images.
         // 按完成顺序消费，并在解码前补位，避免慢请求阻塞后续图片。
         prefetch();
         if (downloaded.bytes === undefined) {
           failed += 1;
           processed += 1;
+          // Update after each image; report the final image only after its batch is saved to avoid duplicate
+          // terminal progress.
           // 每张结束立即更新；最后一张在尾批写库完成后报告，避免重复终值。
           if (processed < IMAGE_COUNT) progress(new FaceSearchImportProgress(processed, IMAGE_COUNT, imported, failed));
           continue;
@@ -252,6 +271,7 @@ export class FaceSearchDemoImporter {
     } catch (error) {
       return this.invalid(`Invalid bundled image JSON: ${error}`);
     } finally {
+      // Close outstanding prefetch requests even when the manifest is corrupt or a database write fails.
       // 清单损坏或写库失败也必须关闭仍在预取的请求。
       this.cancel();
     }
@@ -304,7 +324,12 @@ export class FaceSearchDemoImporter {
     }
   }
 
-  /** 预取失败也正常结算 Promise，页面取消或提前结束时不会遗留未处理的 rejection。 */
+  /**
+   * Settle failed prefetch Promises normally so cancellation or early exit leaves no unhandled
+   * rejection.
+   *
+   * 预取失败也正常结算 Promise，页面取消或提前结束时不会遗留未处理的 rejection。
+   */
   private async downloadImage(entry: ImageJsonEntry, token: number): Promise<DownloadedImage> {
     try {
       return { token: token, entry: entry, bytes: await this.download(entry.imageUrl) };
@@ -327,7 +352,12 @@ export class FaceSearchDemoImporter {
     return HiFaceResult.failure<FaceSearchImportSummary>(HiFaceErrorCode.CLOSED, 'Import cancelled');
   }
 
-  /** 大 JSON 解析定期让出 ArkUI 事件循环，避免 1 万条对象连续解析造成页面假死。 */
+  /**
+   * Yield periodically to the ArkUI event loop while parsing large JSON to avoid freezing the screen on
+   * 10,000 objects.
+   *
+   * 大 JSON 解析定期让出 ArkUI 事件循环，避免 1 万条对象连续解析造成页面假死。
+   */
   private yieldToUi(): Promise<void> {
     return new Promise<void>((resolve: () => void): void => {
       setTimeout(resolve, 0);
@@ -335,7 +365,11 @@ export class FaceSearchDemoImporter {
   }
 }
 
-/** 只保留当前对象文本的轻量读取器，适合 bundled 大数组 JSON。 */
+/**
+ * Lightweight reader retaining only the current object's text, suitable for large bundled JSON arrays.
+ *
+ * 只保留当前对象文本的轻量读取器，适合 bundled 大数组 JSON。
+ */
 class JsonEntryReader {
   private readonly source: string;
   private readonly headerValue: DemoManifestHeader;

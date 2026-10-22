@@ -2,6 +2,10 @@ import { common } from '@kit.AbilityKit';
 import { window } from '@kit.ArkUI';
 
 /**
+ * Keep the search screen awake in the foreground; restore brightness and release keep-awake on exit.
+ * Serialize asynchronous operations so late writes during rapid entry/exit cannot overwrite
+ * restoration.
+ *
  * 搜索页在前台时始终常亮，离开时恢复亮度并释放常亮。
  * 所有异步操作串行执行，避免快速进入/退出时迟到的亮度覆盖恢复值。
  */
@@ -11,12 +15,12 @@ export class SearchScreenPresentation {
   private static readonly NO_FACE_IDLE_DELAY_MILLIS: number = 10000;
   private operation: Promise<void> = Promise.resolve();
   private generation: number = 0;
-  private visible: boolean = false; // 页面显示策略是否生效，停止后忽略迟到回调
+  private visible: boolean = false; // 页面显示策略是否生效，停止后忽略迟到回调 / Whether the screen display policy is active; ignore late callbacks after stopping.
   private activeWindow: window.Window | undefined = undefined;
   private previousBrightness: number = -1;
   private appliedBrightness: number = -1;
   private desiredBrightness: number = -1;
-  private facePresent: boolean = false; // 检测状态变化用于启动或取消连续无人脸倒计时
+  private facePresent: boolean = false; // 检测状态变化用于启动或取消连续无人脸倒计时 / Detection-state changes start or cancel the continuous no-face countdown.
   private idleTimer: number = -1;
   onIdleStateChanged: (idle: boolean) => void = (_idle: boolean): void => {};
 
@@ -56,7 +60,12 @@ export class SearchScreenPresentation {
     }).catch((): void => {});
   }
 
-  /** 逐帧和人数进度均可校正人脸状态；仅状态变化时切换策略，避免逐帧写窗口亮度。 */
+  /**
+   * Both frame and count progress can correct face state; change policy only on transitions instead of
+   * writing brightness each frame.
+   *
+   * 逐帧和人数进度均可校正人脸状态；仅状态变化时切换策略，避免逐帧写窗口亮度。
+   */
   updateFacePresence(hasFace: boolean): void {
     if (!this.visible || this.facePresent === hasFace) return;
     this.facePresent = hasFace;
@@ -87,6 +96,7 @@ export class SearchScreenPresentation {
       } catch (_) {
       }
       try {
+        // Screens share the Ability window; release keep-awake when leaving search.
         // 页面共用 Ability 窗口，离开搜索页后释放常亮。
         await target.setWindowKeepScreenOn(false);
       } catch (_) {
@@ -100,6 +110,8 @@ export class SearchScreenPresentation {
     this.idleTimer = setTimeout((): void => {
       this.idleTimer = -1;
       if (this.visible && !this.facePresent) {
+        // Match Android/iOS: require ten continuous seconds without faces before reducing backlight and
+        // camera-session rate together.
         // 与 Android/iOS 一致：确认连续 10 秒无人脸后再同时降低背光与相机会话帧率。
         this.queueBrightness(SearchScreenPresentation.IDLE_BRIGHTNESS);
         this.onIdleStateChanged(true);
@@ -113,7 +125,12 @@ export class SearchScreenPresentation {
     this.idleTimer = -1;
   }
 
-  /** 串行设置窗口亮度，避免快速进入/退出时迟到的异步写入覆盖恢复值。 */
+  /**
+   * Serialize brightness changes so late asynchronous writes during rapid entry/exit cannot overwrite
+   * the restored value.
+   *
+   * 串行设置窗口亮度，避免快速进入/退出时迟到的异步写入覆盖恢复值。
+   */
   private queueBrightness(brightness: number): void {
     this.desiredBrightness = brightness;
     if (!this.visible || this.activeWindow === undefined || this.appliedBrightness === brightness) return;

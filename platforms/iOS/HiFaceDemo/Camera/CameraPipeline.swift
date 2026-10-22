@@ -1,6 +1,9 @@
 @preconcurrency import AVFoundation
 import HiFace
 
+/// AVFoundation counterpart of Android CameraPreviewFragment. Manage permissions, session, lenses,
+/// preview, and synchronous frames only; the SDK owns face flows, model threads, and business outcomes.
+/// @unchecked Sendable relies on isolation by sessionQueue, frameQueue, and controlLock.
 /// 对应 Android `CameraPreviewFragment` 的 AVFoundation 适配层。
 ///
 /// 这里只管理权限、会话、镜头、预览和同步送帧；人脸流程、模型线程与业务终态由 SDK 负责。
@@ -14,12 +17,14 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     // MARK: - Session and synchronized state
+    // 会话与同步状态。
 
     let captureSession = AVCaptureSession()
     private let sdk: HiFaceSDK
     private let detectionConfiguration: FaceDetectionConfiguration
     private let settings: DemoCameraSettings
     private let deliversDetectionResults: Bool
+    // The active rate is also this screen's allowed ceiling; search additionally permits 5 FPS.
     // 活跃帧率也是该页面允许设置的上限；搜索页另允许降到 5 FPS。
     private let sessionFramesPerSecond: Int32
     private let minimumSessionFramesPerSecond: Int32
@@ -47,12 +52,15 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     private var resolutionAdjusted = false
     private var reportedFrameWidth = 0
     private var reportedFrameHeight = 0
+    // Protected by controlLock; update the app gate first, then serialize AVCaptureDevice changes on
+    // sessionQueue.
     // 受 controlLock 保护；先更新应用侧门禁，再由 sessionQueue 串行修改 AVCaptureDevice。
     private var targetSessionFramesPerSecond: Int32
     private var applicationFrameIntervalSeconds: Double = 0
     private var lastAcceptedFrameSeconds: Double?
 
     // MARK: - Main actor callbacks
+    // 主 actor 回调。
 
     var onDetection: (@MainActor @Sendable (FaceDetectionResult, Bool, Bool) -> Void)?
     var onError: (@MainActor @Sendable (String) -> Void)?
@@ -64,9 +72,11 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     var onStarted: (@MainActor @Sendable () -> Void)?
 
     #if DEBUG
+    // Only UI-regression processes observe raw camera frames, independent of paused SDK analysis or an
+    // empty library.
     // 仅 UI 回归进程观察原始相机帧，不依赖 SDK 是否暂停分析或人脸库是否为空。
     private let observesTestFrames = ProcessInfo.processInfo.arguments.contains("--camera-lifecycle-test")
-    private var lastTestFrameTimestamp: Double = -.infinity // frameQueue only
+    private var lastTestFrameTimestamp: Double = -.infinity // frameQueue only / 仅限 frameQueue
     var onTestFrame: (@MainActor @Sendable (Double) -> Void)?
     #endif
 
@@ -111,11 +121,12 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     deinit { NotificationCenter.default.removeObserver(self) }
 
     // MARK: - Lifecycle
+    // 生命周期。
 
     @objc private func sessionInterrupted(_ notification: Notification) {
         if let reason = notification.userInfo?[AVCaptureSessionInterruptionReasonKey] as? NSNumber,
            reason.intValue == AVCaptureSession.InterruptionReason.videoDeviceNotAvailableInBackground.rawValue {
-            return // scenePhase 负责 inactive/background 暂停，不能把正常切换变成失败。
+            return // scenePhase 负责 inactive/background 暂停，不能把正常切换变成失败。 / scenePhase handles inactive/background pauses; ordinary transitions must not become failures.
         }
         guard let token = suspendForSessionRecovery() else { return }
         reportCameraAvailability(
@@ -150,6 +161,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         let generation = withControlLock {
             wantsRunning = true
             self.analysisEnabled = analysisEnabled
+            // A new start supersedes queued lens switches; do not carry an old switch lock into a new lifecycle.
             // 新一轮启动会取代仍在排队的镜头切换，不能把旧切换锁带入新生命周期。
             inputTransitioning = false
             sessionUnavailable = false
@@ -186,6 +198,9 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             frameGeneration += 1
             pendingDetection = nil
         }
+        // The OS may suspend the process before queued background cleanup runs, while foreground start()
+        // advances the lifecycle generation. Never cancel queued stop by generation; the shared serial queue
+        // guarantees stop-before-start.
         // 退后台后进程可能在队列执行前被系统挂起；此时回前台的 start() 会推进生命周期代次。
         // 已排队的停止任务不能按代次取消；停止和启动共用串行队列，确保始终先停后启。
         sessionQueue.async { [captureSession] in
@@ -193,6 +208,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         }
     }
 
+    /// Pause analysis but retain preview while showing capture, liveness, or verification outcomes.
     /// 暂停分析但保留预览，用于展示采集、活体和验证终态。
     func pauseAnalysis() {
         withControlLock {
@@ -211,6 +227,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         frameQueue.async { [weak self] in self?.lastReportedError = nil }
     }
 
+    /// Update analysis throttling immediately and request device rate asynchronously; actual preview rate
+    /// depends on hardware.
     /// 立即更新分析门禁，异步请求设备帧率；实际预览帧率取决于硬件支持。
     func setSessionFrameRate(_ framesPerSecond: Int32) {
         precondition(framesPerSecond >= minimumSessionFramesPerSecond
@@ -245,6 +263,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 position == .front ? AVCaptureDevice.Position.back : .front
             }
             let usable = reconfigureInput(to: target)
+            // Drain old-camera queued frames before allowing SDK flow recovery.
             // 排空旧镜头已入队的帧，再允许调用方恢复 SDK 流程。
             frameQueue.async { [weak self] in
                 Task { @MainActor [weak self] in
@@ -257,6 +276,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     // MARK: - Session configuration
+    // 会话配置。
 
     private func startAuthorized(generation: Int) {
         sessionQueue.async { [weak self] in
@@ -325,6 +345,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         guard let device = (captureSession.inputs.first as? AVCaptureDeviceInput)?.device else {
             return false
         }
+        // Dimensions and NV12 are SDK input requirements; 15/5 FPS are analysis targets and must not exclude
+        // fixed-rate Mac cameras.
         // 尺寸与 NV12 是 SDK 输入约束；15/5 FPS 是分析目标，不能排除固定帧率的 Mac 摄像头。
         let formats = device.formats.filter { format in
             let pixelFormat = CMFormatDescriptionGetMediaSubType(format.formatDescription)
@@ -355,9 +377,13 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             return false
         }
         defer { device.unlockForConfiguration() }
+        // Setting activeFormat puts iOS into inputPriority automatically, preventing a quality preset from
+        // overriding the selected format.
         // iOS 在设置 activeFormat 后自动进入 inputPriority，避免质量 preset 再覆盖所选格式。
         device.activeFormat = formats[index]
         let targetFramesPerSecond = withControlLock { targetSessionFramesPerSecond }
+        // Lower hardware capture where possible even without 5 FPS support; never assign durations outside the
+        // format's advertised range.
         // 不支持 5 FPS 时也尽量降低硬件采集；不能写入格式未声明的时长。
         if let duration = Self.frameDuration(for: device.activeFormat, target: targetFramesPerSecond) {
             Self.setFrameDuration(duration, on: device)
@@ -370,6 +396,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         if #available(iOS 18.0, *) {
             displayMultiplier = max(device.displayVideoZoomFactorMultiplier, .leastNonzeroMagnitude)
         } else {
+            // iOS 15-17 has no system display-zoom conversion; use the wide camera's actual 1.0x instead of
+            // risking an unsupported 0.8.
             // iOS 15–17 没有系统显示倍率换算，使用普通广角的真实 1.0x，不能冒险写入 0.8。
             displayMultiplier = 1
         }
@@ -397,6 +425,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         return true
     }
 
+    /// Request frame rate for the current format without rebuilding the session; app throttling still
+    /// controls analysis on hardware fallback or setting failure.
     /// 按当前格式请求设备帧率，不重建会话；硬件回退或设置失败时仍由应用门禁控制分析频率。
     private func applyDeviceFrameRate(_ framesPerSecond: Int32) {
         guard configured,
@@ -405,10 +435,14 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         do {
             try device.lockForConfiguration()
             defer { device.unlockForConfiguration() }
+            // Writing manual durations while automatic frame rate is enabled throws an Objective-C exception;
+            // Swift catch cannot handle it.
             // 系统启用自动帧率时手工写时长会抛 Objective-C 异常，不能依赖 Swift catch。
             if #available(iOS 18.0, *), device.isAutoVideoFrameRateEnabled { return }
             Self.setFrameDuration(duration, on: device)
         } catch {
+            // Lock contention or system policy may reject changes; captureOutput still drops frames early at the
+            // same target rate.
             // 锁竞争或系统策略可能拒绝动态修改；captureOutput 仍按相同目标帧率提前丢帧。
         }
     }
@@ -425,6 +459,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     // MARK: - Camera switching
+    // 镜头切换。
 
     private func reconfigureInput(to target: AVCaptureDevice.Position) -> Bool {
         guard configured else {
@@ -445,6 +480,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         let previousInputs = captureSession.inputs
         captureSession.beginConfiguration()
         previousInputs.forEach(captureSession.removeInput)
+        // Use the new camera's supported format first, then reselect by user preset after adding it; never
+        // reuse the old camera's resolution.
         // 新镜头先使用自身支持的格式，加入后重新按用户档位选择，不能沿用旧镜头的分辨率。
         if captureSession.canSetSessionPreset(.inputPriority) {
             captureSession.sessionPreset = .inputPriority
@@ -495,6 +532,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     private func preferredDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        // iOS 18 can convert virtual ultrawide internal zoomFactor to system-display 0.8x. Older systems and
+        // front cameras use ordinary wide cameras with a safe minimum of 1.0x.
         // iOS 18 可把虚拟超广角镜头的内部 zoomFactor 换算成系统 UI 使用的 0.8x。
         // 较早系统或前摄使用普通广角，最低安全值为 1.0x。
         if position == .back {
@@ -510,6 +549,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     // MARK: - Frame delivery
+    // 帧交付。
 
     func captureOutput(
         _ output: AVCaptureOutput,
@@ -555,6 +595,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             switch sdk.processFrame(frame, configuration: detectionConfiguration) {
             case .success(let result):
                 lastReportedError = nil
+                // Search already has a complete onFrame callback; avoid a separate detection result that updates the
+                // main thread and SwiftUI twice.
                 // 搜索已有完整 onFrame 回调；不再另发检测结果使主线程和 SwiftUI 更新两遍。
                 guard deliversDetectionResults else { return }
                 enqueueDetection(
@@ -565,6 +607,9 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 )
             case .failure(let error) where error.code == .notReady || error.code == .busy
                     || error.code == .processingFailed:
+                // The flow coordinator already sends processingFailed to capture/liveness/verification callbacks; the
+                // camera must not promote the same transient error into session failure. Without an active flow, drop
+                // only that frame, matching Android.
                 // 流程协调器已经把 processingFailed 交给录入/活体/验证回调；相机层不能再把
                 // 同一个瞬时错误升级成会话故障。无活动流程时也与 Android 一样只丢弃该帧。
                 break
@@ -622,6 +667,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     // MARK: - Callback delivery
+    // 回调交付。
 
     private func reportResolutionIfNeeded(width: Int, height: Int, generation: Int) {
         let fallback = withControlLock { () -> Bool? in
@@ -667,6 +713,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         reportError(message, generation: withControlLock { lifecycleGeneration })
     }
 
+    /// Retain session configuration during AVFoundation interruptions while preventing old frames from
+    /// entering the SDK.
     /// AVFoundation 中断期间继续保留会话配置，但阻止旧帧进入 SDK。
     private func suspendForSessionRecovery() -> (lifecycle: Int, frame: Int)? {
         withControlLock {
@@ -680,6 +728,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         }
     }
 
+    /// Resume on the camera-session queue after interruptions or media-service resets, avoiding main-thread
+    /// blocking.
     /// 中断结束或媒体服务重置后在相机会话队列恢复，避免阻塞主线程。
     private func recoverSession(message: String) {
         guard let token = withControlLock({ () -> (lifecycle: Int, frame: Int)? in
@@ -695,6 +745,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             }
             Task { @MainActor [weak self] in
                 guard let self, isCurrentRecovery(token) else { return }
+                // Let the screen invalidate the old SDK flow before admitting new frames, preventing state from
+                // spanning an interruption.
                 // 先让页面作废旧 SDK 流程，再开放新帧，避免中断前后的流程状态串联。
                 onCameraAvailabilityChanged?(true, message)
                 let resumed = withControlLock { () -> Bool in
@@ -738,6 +790,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             target: Double(target), ranges: frameRateRanges(for: format)
         ) else { return nil }
         let range = ranges[selected.rangeIndex]
+        // Reuse exact device CMTime endpoints to avoid rounding outside fractional rates such as 7.5 FPS.
         // 端点直接复用设备给出的精确 CMTime，避免 7.5 等分数帧率的舍入越界。
         if selected.framesPerSecond == range.minFrameRate { return range.maxFrameDuration }
         if selected.framesPerSecond == range.maxFrameRate { return range.minFrameDuration }
@@ -748,6 +801,8 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     private static func setFrameDuration(_ duration: CMTime, on device: AVCaptureDevice) {
         if CMTimeCompare(device.activeVideoMinFrameDuration, duration) == 0,
            CMTimeCompare(device.activeVideoMaxFrameDuration, duration) == 0 { return }
+        // Expand the allowed interval before tightening the other endpoint, maintaining min <= max during 15/5
+        // FPS changes.
         // 先扩展允许区间再收紧另一端，15/5 FPS 切换过程中也保持 min <= max。
         if CMTimeCompare(duration, device.activeVideoMinFrameDuration) >= 0 {
             device.activeVideoMaxFrameDuration = duration
@@ -791,6 +846,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     }
 
     // MARK: - Synchronization
+    // 同步。
 
     private func withControlLock<T>(_ body: () -> T) -> T {
         controlLock.lock()

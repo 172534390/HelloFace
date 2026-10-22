@@ -7,6 +7,9 @@ namespace hiface_linux_demo {
 namespace {
 constexpr uint32_t background = 0xf5f5f7, surface = 0xffffff, ink = 0x242029, muted = 0x69636f, border = 0xe1e5eb;
 constexpr uint32_t accent = 0x077a63, tint = 0xe6f4ef, danger = 0xb33d37, dark = 0x172233;
+constexpr uint32_t technology_green = 0x00f5a0;
+bool cameraSetting(const std::string& key) { return key.rfind("camera_", 0) == 0 || key == "mirror"; }
+bool settingsPage(const std::string& page) { return page == "settings" || page == "camera-settings"; }
 Rect fitImage(Rect frame, int width, int height) {
     if (width <= 0 || height <= 0) return {};
     const double scale = std::min(double(frame.w) / width, double(frame.h) / height);
@@ -26,7 +29,7 @@ std::string friendly(const std::string& text) {
 }
 DemoUi::DemoUi(Measure measure) : measure_(std::move(measure)) {
     if (!measure_) measure_ = [](const std::string& value, Font font) {
-        int width = 0; for (unsigned char c : value) if ((c & 0xc0) != 0x80) width += c < 128 ? (font == Font::Title ? 12 : font == Font::Small ? 6 : 7) : (font == Font::Title ? 22 : 14); return width;
+        int width = 0; for (unsigned char c : value) if ((c & 0xc0) != 0x80) width += c < 128 ? (font == Font::Title ? 12 : font == Font::Large ? 10 : font == Font::Small ? 6 : 7) : (font == Font::Title ? 22 : font == Font::Large ? 18 : 14); return width;
     };
 }
 void DemoUi::text(int x, int y, std::string value, uint32_t color, int max_width, Font font) {
@@ -47,6 +50,7 @@ void DemoUi::wrap(int x, int y, const std::string& value, uint32_t color, int wi
     while (words >> word) {
         if (!line.empty() && measure_(line + ' ' + word, font) > width) { lines.push_back(std::move(line)); line.clear(); }
         // IDs and paths may have no spaces. Split only at UTF-8 code point boundaries.
+        // ID 和路径可能不含空格，只能在 UTF-8 码点边界断行。
         while (measure_(word, font) > width && int(lines.size()) <= max_lines) {
             size_t end = 0, next = 0;
             while (next < word.size()) {
@@ -68,7 +72,7 @@ void DemoUi::wrap(int x, int y, const std::string& value, uint32_t color, int wi
 void DemoUi::card(Rect r) {
     scene_.box({r.x, r.y + 2, r.w, r.h}, 0xe9ecf0, 12); scene_.box(r, border, 12); scene_.box({r.x + 1, r.y + 1, r.w - 2, r.h - 2}, surface, 11);
 }
-void DemoUi::button(Rect r, const std::string& label, const std::string& action, int style, bool enabled) {
+void DemoUi::button(Rect r, const std::string& label, const std::string& action, int style, bool enabled, Font font) {
     const bool hover = enabled && r.contains(pointer_x_, pointer_y_);
     const bool primary = style == 1, selected = style == 2, destructive = style == 3, navigation = style == 4;
     uint32_t fill = primary ? accent : selected ? tint : navigation ? 0x204438 : surface;
@@ -77,8 +81,8 @@ void DemoUi::button(Rect r, const std::string& label, const std::string& action,
     if (hover) fill = primary ? 0x05624f : navigation ? 0x2b574b : destructive ? 0xffefed : 0xedf5f1;
     if (!enabled) { fill = 0xf0f1f4; line = 0xe5e7ec; color = 0xa0a5af; }
     scene_.box(r, keyboard_focus_ == action ? accent : line, 8); scene_.box({r.x + 1, r.y + 1, r.w - 2, r.h - 2}, fill, 7);
-    const int label_width = measure_(label, Font::Body);
-    text(r.x + std::max(9, (r.w - label_width) / 2), r.y + r.h / 2 + 5, label, color, r.w - 18);
+    const int label_width = measure_(label, font);
+    text(r.x + std::max(9, (r.w - label_width) / 2), r.y + r.h / 2 + (font == Font::Large ? 6 : 5), label, color, r.w - 18, font);
     const auto bounds = r.intersect(scene_.clip); if (bounds.w > 0 && bounds.h > 0) controls_.push_back({bounds, action, "", enabled});
 }
 void DemoUi::field(Rect r, const std::string& key, const std::string& label, const std::string& initial, bool enabled) {
@@ -126,55 +130,134 @@ void DemoUi::picture(Rect r, const Image* image, const CameraFrame* camera, bool
     scene_.box(r, 0x101a29, 8);
     const double scale = std::min(double(r.w) / iw, double(r.h) / ih);
     const Rect image_rect = fitImage(r, iw, ih);
-    scene_.image(image_rect, data->data(), iw, ih, mirror);
+    scene_.image(image_rect, data->data(), iw, ih, mirror, camera && camera->x11_bgrx);
     const auto old_clip = scene_.clip; scene_.clip = scene_.clip.intersect(image_rect);
     for (const auto& box : boxes) {
         const int x = image_rect.x + int((mirror ? iw - box.x - box.width : box.x) * scale), y = image_rect.y + int(box.y * scale);
-        const int bw = std::max(1, int(box.width * scale)), bh = std::max(1, int(box.height * scale)), stroke = box.selected ? 4 : 2; const auto color = box.matched ? 0x79e3c0u : 0xf3c981u;
-        scene_.box({x, y, bw, stroke}, color); scene_.box({x, y + bh - stroke, bw, stroke}, color); scene_.box({x, y, stroke, bh}, color); scene_.box({x + bw - stroke, y, stroke, bh}, color);
-        const int label_width = std::min(image_rect.w, std::min(std::max(bw, 160), measure_(box.label, Font::Small) + 16));
-        const int label_x = std::clamp(x, image_rect.x, image_rect.x + image_rect.w - label_width), label_y = std::max(image_rect.y, y - 25);
-        scene_.box({label_x, label_y, label_width, 23}, dark, 4);
-        text(label_x + 7, label_y + 16, box.label, color, label_width - 14, Font::Small);
-        for (const auto& point : box.points) if (point.x >= 0 && point.x < iw && point.y >= 0 && point.y < ih)
-            scene_.box({image_rect.x + int((mirror ? iw - point.x : point.x) * scale), image_rect.y + int(point.y * scale), 2, 2}, 0x8edcfa);
+        const int bw = std::max(1, int(box.width * scale)), bh = std::max(1, int(box.height * scale));
+        const int stroke = box.selected ? 6 : 4;
+        scene_.box({x, y, bw, stroke}, technology_green);
+        scene_.box({x, y + bh - stroke, bw, stroke}, technology_green);
+        scene_.box({x, y, stroke, bh}, technology_green);
+        scene_.box({x + bw - stroke, y, stroke, bh}, technology_green);
+        const int label_width = std::min(image_rect.w, std::max(bw, measure_(box.label, Font::Title) + 20));
+        const int label_x = std::clamp(x, image_rect.x, image_rect.x + image_rect.w - label_width);
+        const int label_y = std::max(image_rect.y, y - 36);
+        scene_.box({label_x, label_y, label_width, 34}, dark, 5);
+        text(label_x + 10, label_y + 25, box.label, 0xffffff, label_width - 20, Font::Title);
+        constexpr int point_size = 7;
+        for (const auto& point : box.points) if (point.x >= 0 && point.x < iw && point.y >= 0 && point.y < ih) {
+            const int point_x = image_rect.x + int((mirror ? iw - point.x : point.x) * scale);
+            const int point_y = image_rect.y + int(point.y * scale);
+            scene_.box({point_x - point_size / 2, point_y - point_size / 2, point_size, point_size}, technology_green, point_size / 2);
+        }
     }
     scene_.clip = old_clip;
 }
+void DemoUi::home(const ViewState& s, Rect b) {
+    scene_.box(b, background);
+    text(28, 42, "HiFace Linux Demo", ink, b.w - 56, Font::Title);
+    wrap(28, 70, "Choose one feature to open its own demonstration page.", muted, b.w - 56, 2);
+    const int columns = b.w < 800 ? 2 : 3, gap = 14, count = int(sizeof(demo_pages) / sizeof(demo_pages[0]));
+    const int rows = (count + columns - 1) / columns;
+    const int w = (b.w - 56 - (columns - 1) * gap) / columns;
+    const int h = std::clamp((b.h - 196 - (rows - 1) * gap) / rows, 96, 150);
+    home_max_scroll_ = std::max(0, 112 + rows * h + (rows - 1) * gap - (b.h - 84));
+    home_scroll_ = std::clamp(home_scroll_, 0, home_max_scroll_);
+    const auto old_clip = scene_.clip; scene_.clip = {0, 100, b.w, b.h - 176};
+    for (int i = 0; i < count; ++i) {
+        const auto& feature = demo_pages[i];
+        const Rect r{28 + (i % columns) * (w + gap), 112 + (i / columns) * (h + gap) - home_scroll_, w, h};
+        button(r, "", std::string("page:") + feature.route, 0, !s.busy && !s.importing);
+        text(r.x + 14, r.y + 30, feature.title, accent, w - 28, Font::Large);
+        wrap(r.x + 14, r.y + 55, feature.description, muted, w - 28, h > 100 ? 3 : 2, Font::Small);
+    }
+    scene_.clip = old_clip;
+    if (home_max_scroll_) text(28, b.h - 60, "Scroll or use Page Up / Page Down for more features", muted, b.w - 190, Font::Small);
+    text(28, b.h - 28, notice_.empty() ? s.ready ? "SDK ready | Open a feature to begin" : s.status : notice_,
+         s.failed ? danger : muted, b.w - 190, Font::Small);
+    button({b.w - 142, b.h - 54, 114, 34}, "Exit Demo", "quit", 0);
+}
 void DemoUi::camera(const ViewState& s, Rect b) {
-    card({b.x, b.y, b.w, 86}); field({b.x + 16, b.y + 13, 190, 56}, "device", "Camera device", s.device, !s.busy);
-    button({b.x + 220, b.y + 34, 98, 34}, "Connect", "connect", 1, content_enabled_);
-    button({b.x + 328, b.y + 34, 98, 34}, "Next camera", "next", 0, content_enabled_);
-    scene_.box({b.x + 448, b.y + 31, 8, 8}, s.connected ? accent : 0xa0a5af, 4);
-    text(b.x + 466, b.y + 39, s.connected ? "Camera connected" : "Camera disconnected", s.connected ? accent : muted, b.w - 482);
-    text(b.x + 448, b.y + 61, s.camera, muted, b.w - 464, Font::Small);
-    const int top = b.y + 104, h = b.h - 104, side = 246, pw = b.w - side - 16;
-    card({b.x, top, pw, h}); text(b.x + 16, top + 28, "Live preview", ink, pw - 126);
-    button({b.x + pw - 102, top + 12, 86, 30}, s.settings.mirror ? "Mirror on" : "Mirror off", "mirror", s.settings.mirror ? 2 : 0, content_enabled_);
-    const Rect preview{b.x + 12, top + 52, pw - 24, h - 146};
-    if (s.frame && s.connected) picture(preview, nullptr, s.frame.get(), s.settings.mirror, s.boxes);
-    else empty(preview, "Connect a camera to begin", "VMware: connect the USB camera to Ubuntu");
-    const int footer = top + h - 80;
-    if (s.aligned_preview) picture({b.x + 16, footer + 8, 58, 58}, s.aligned_preview.get(), nullptr, false, {});
-    else scene_.box({b.x + 16, footer + 8, 58, 58}, 0xedf1f5, 8);
-    text(b.x + 86, footer + 23, "Verification reference", muted, pw - 192, Font::Small);
-    text(b.x + 86, footer + 46, s.reference.empty() ? "No reference selected" : s.reference, s.reference.empty() ? muted : accent, pw - 194);
-    button({b.x + pw - 88, footer + 20, 72, 32}, "Clear", "clear-reference", 0, content_enabled_ && !s.reference.empty());
-    const int sx = b.x + pw + 16; card({sx, top, side, h}); text(sx + 16, top + 28, "Workflow", ink, side - 32);
-    text(sx + 16, top + 51, "Choose a task, then start", muted, side - 32, Font::Small);
+    scene_.box(b, 0x101a29);
+    if (!s.busy && s.image_first) picture(b, s.image_first.get(), nullptr, false, s.boxes);
+    else if (s.frame && s.connected && !s.busy) picture(b, nullptr, s.frame.get(), s.settings.mirror, s.boxes);
+    else empty(b, "Connect a camera to begin", "Open Menu to choose a video device");
+
+    // Camera feature pages share the kiosk renderer: the camera consumes the complete
+    // portrait viewport and diagnostics stay in compact overlays.
+    // 各相机功能页共用全屏竖向渲染器，诊断信息放在紧凑叠加层中。
+    scene_.box({b.x, b.y, b.w, 112}, dark);
+    scene_.box({b.x + 16, b.y + 16, 36, 36}, accent, 10);
+    text(b.x + 23, b.y + 40, "HF", 0xffffff, 28);
+    text(b.x + 64, b.y + 31, demoPage(page_)->title, 0xffffff, b.w - 172, Font::Title);
+    scene_.box({b.x + b.w - 32, b.y + 20, 10, 10}, s.connected ? 0x79e3c0 : 0xff9696, 5);
+    const int metric_width = std::max(70, (b.w - 32) / 4);
+    const std::string metrics[] = {number(s.fps) + " FPS", number(s.analysis_fps) + " FPS",
+        number(s.milliseconds) + " ms", std::to_string(s.count)};
+    const char* metric_names[] = {"Preview", "Recognition", "Last analysis", "Library"};
+    for (int i = 0; i < 4; ++i) {
+        const int x = b.x + 16 + i * metric_width;
+        text(x, b.y + 76, metrics[i], i == 3 ? technology_green : 0xffffff, metric_width - 8, Font::Large);
+        text(x, b.y + 99, metric_names[i], 0xc2ceda, metric_width - 8, Font::Body);
+    }
+    if (page_ == "capture" && s.aligned_preview && !s.busy) {
+        const Rect preview{b.x + b.w - 190, b.y + b.h - 354, 168, 168};
+        scene_.box(preview, dark, 8); picture(preview, s.aligned_preview.get(), nullptr, false, {});
+        text(preview.x, preview.y - 8, "Aligned capture", 0xffffff, preview.w, Font::Small);
+    }
+
+    const int controls_y = b.y + b.h - 74;
+    scene_.box({b.x, b.y + b.h - 164, b.w, 164}, dark);
+    text(b.x + 18, b.y + b.h - 137, "Running: " + std::string(modeName(s.mode)), technology_green, b.w - 36, Font::Large);
+    wrap(b.x + 18, b.y + b.h - 108, friendly(s.status), 0xffffff, b.w - 36, 2, Font::Body);
+    const int action_width = (b.w - 48) / 3;
+    button({b.x + 12, controls_y, action_width, 46}, selected_task_ == "S" && s.mode == 'P' ? "Resume" : selected_task_ == "S" && s.mode == 'S' ? "Pause" : "Start",
+        selected_task_ == "S" && (s.mode == 'S' || s.mode == 'P') ? "pause" : "start-task", 4,
+        content_enabled_ && s.connected && (selected_task_ != "V" || !s.reference.empty()), Font::Large);
+    button({b.x + 24 + action_width, controls_y, action_width, 46}, s.settings.mirror ? "Mirror on" : "Mirror off", "mirror",
+        s.settings.mirror ? 2 : 4, content_enabled_, Font::Large);
+    button({b.x + 36 + action_width * 2, controls_y, action_width, 46}, camera_menu_ ? "Close menu" : "Menu", "camera-menu", 4,
+        s.ready && !s.importing, Font::Large);
+    if (!s.lighting.empty()) text(b.x + 18, b.y + b.h - 8, s.lighting, 0xc2ceda, b.w - 36, Font::Small);
+
+    if (!camera_menu_) return;
+    const int menu_h = std::min(520, b.h - 116), menu_y = b.y + b.h - 86 - menu_h;
+    scene_.box({b.x + 12, menu_y, b.w - 24, menu_h}, 0x253342, 14);
+    text(b.x + 32, menu_y + 32, "Camera and workflow", 0xffffff, b.w - 64, Font::Title);
+    const int x = b.x + 32, w = b.w - 64;
+    field({x, menu_y + 48, w - 224, 56}, "device", "Camera device", s.device, !s.busy);
+    button({x + w - 212, menu_y + 69, 96, 34}, "Connect", "connect", 1, content_enabled_);
+    button({x + w - 106, menu_y + 69, 106, 34}, "Next", "next", 0, content_enabled_);
+    text(x, menu_y + 126, s.camera, 0x9badbf, w, Font::Small);
+    text(x, menu_y + 153, "Open a feature page", 0xdce5ee, w, Font::Small);
     const char* labels[] = {"Detection", "Capture", "Liveness", "Verify", "Enroll", "Search"};
+    const int task_gap = 8, task_w = (w - task_gap * 2) / 3;
     for (int i = 0; i < 6; ++i) {
         const std::string task(1, "DCLVES"[i]);
-        button({sx + 16 + (i % 2) * 111, top + 68 + (i / 2) * 42, 103, 34}, labels[i], "task:" + task, selected_task_ == task ? 2 : 0, content_enabled_);
+        const char* routes[] = {"detection", "capture", "liveness", "verification", "enrollment", "camera"};
+        button({x + (i % 3) * (task_w + task_gap), menu_y + 164 + (i / 3) * 42, task_w, 34},
+            labels[i], std::string("page:") + routes[i], selected_task_ == task ? 2 : 0, content_enabled_);
     }
     const bool has_ref = selected_task_ != "V" || !s.reference.empty();
-    button({sx + 16, top + 208, side - 32, 38}, "Start " + std::string(modeName(selected_task_[0])), "start-task", 1, content_enabled_ && s.connected && has_ref);
-    button({sx + 16, top + 256, side - 32, 34}, s.mode == 'P' ? "Resume search" : "Pause search", "pause", 0, content_enabled_ && (s.mode == 'S' || s.mode == 'P'));
-    button({sx + 16, top + 300, side - 32, 34}, "Cancel workflow", "mode:X", 0, content_enabled_ && s.mode != 'D');
-    if (h > 394) {
-        if (!has_ref) { if (h > 430) text(sx + 16, top + 352, "Verification needs a reference", muted, side - 32, Font::Small); button({sx + 16, top + h - 48, side - 32, 32}, "Choose reference", "page:gallery", 0, content_enabled_); }
-        else wrap(sx + 16, top + 367, "Running: " + std::string(modeName(s.mode)) + ". Actions and search options are in Settings.", muted, side - 32, 3, Font::Small);
-    }
+    button({x, menu_y + 256, (w - 8) / 2, 38}, "Start " + std::string(modeName(selected_task_[0])), "start-task", 1,
+        content_enabled_ && s.connected && has_ref);
+    button({x + (w + 8) / 2, menu_y + 256, (w - 8) / 2, 38}, "Cancel workflow", "mode:X", 0,
+        content_enabled_ && s.mode != 'D');
+    const char* navigation_labels[] = {"Home", "Library", "Settings", "Photo search", "Camera"};
+    const char* navigation_pages[] = {"home", "gallery", "settings", "image-search", "camera-settings"};
+    const int nav_w = (w - 32) / 5;
+    for (int i = 0; i < 5; ++i)
+        button({x + i * (nav_w + 8), menu_y + 310, nav_w, 36}, navigation_labels[i],
+            std::string("page:") + navigation_pages[i], 0, content_enabled_);
+    if (!has_ref) text(x, menu_y + 376, "Verification needs a Face library reference.", 0xf3c981, w, Font::Small);
+    else text(x, menu_y + 376, s.reference.empty() ? "No verification reference selected" : "Reference: " + s.reference,
+        0x9badbf, w - 90, Font::Small);
+    button({x + w - 82, menu_y + 354, 82, 32}, "Clear", "clear-reference", 0,
+        content_enabled_ && !s.reference.empty());
+    if (page_ == "detection" || page_ == "capture" || page_ == "enrollment")
+        button({x, menu_y + 404, w, 34}, page_ == "detection" ? "Detect a photo" : page_ == "capture" ? "Choose a photo reference" : "Capture a photo for enrollment", "browse:feature-photo", 0, content_enabled_);
+    button({x, menu_y + menu_h - 52, w, 34}, "Exit Demo", "quit", 3, true);
 }
 void DemoUi::photos(const ViewState& s, Rect b) {
     const int half = (b.w - 48) / 2;
@@ -183,22 +266,16 @@ void DemoUi::photos(const ViewState& s, Rect b) {
     button({b.x + 16 + half - 72, b.y + 35, 72, 34}, "Browse", "browse:photo-a", 0, content_enabled_);
     field({b.x + 32 + half, b.y + 14, half - 82, 56}, "photo-b", "Photo B for comparison", "", content_enabled_);
     button({b.x + b.w - 88, b.y + 35, 72, 34}, "Browse", "browse:photo-b", 0, content_enabled_);
-    const char* labels[] = {"Detect", "Compare A / B", "Set reference", "Enroll photo", "Search"};
-    const char* actions[] = {"detect", "compare", "reference", "enroll", "search"}; const int bw = (b.w - 64) / 5;
-    for (int i = 0; i < 5; ++i) button({b.x + 16 + i * (bw + 8), b.y + 92, bw, 36}, labels[i], std::string("image:") + actions[i], i == 1 ? 1 : 0,
-        content_enabled_ && !values_["photo-a"].empty() && (i != 1 || !values_["photo-b"].empty()));
+    button({b.x + 16, b.y + 92, b.w - 32, 36}, "Compare photos (no liveness)", "image:compare", 1,
+        content_enabled_ && !values_["photo-a"].empty() && !values_["photo-b"].empty());
     const int y = b.y + 160, w = (b.w - 16) / 2, h = b.h - 160;
     for (int i = 0; i < 2; ++i) card({b.x + i * (w + 16), y, w, h});
     text(b.x + 16, y + 28, "Photo A", ink, w - 32);
-    text(b.x + w + 32, y + 28, s.image_second ? "Photo B" : s.image_matches.empty() ? "Aligned face" : "Search results", ink, w - 32);
+    text(b.x + w + 32, y + 28, "Photo B", ink, w - 32);
     const Rect left{b.x + 12, y + 48, w - 24, h - 60}, right{b.x + w + 28, y + 48, w - 24, h - 60};
     picture(left, s.image_first.get(), nullptr, false, s.boxes);
-    auto rr = right; if (!s.image_matches.empty()) rr.h = std::max(64, rr.h - 142);
-    picture(rr, s.image_second ? s.image_second.get() : s.aligned_preview.get(), nullptr, false, {});
-    for (size_t i = 0; i < s.image_matches.size(); ++i) {
-        const int row = rr.y + rr.h + 15 + int(i) * 24; const auto& match = s.image_matches[i];
-        text(right.x + 6, row + 11, match.id, ink, right.w - 88, Font::Small); text(right.x + right.w - 68, row + 11, number(match.similarity, 3), accent, 64, Font::Small);
-    }
+    picture(right, s.image_second.get(), nullptr, false, {});
+
 }
 void DemoUi::imageSearch(const ViewState& s, Rect b) {
     if (image_search_generation_ != s.photo_search_generation) { image_search_generation_ = s.photo_search_generation; selected_image_face_ = image_face_offset_ = 0; }
@@ -328,18 +405,20 @@ void DemoUi::library(const ViewState& s, Rect b) {
     button({sx + 16, top + h - 48, side - 32, 32}, "Delete face", "delete", 3, content_enabled_ && selected);
 }
 void DemoUi::resetDraft(const DemoSettings& settings) { for (const auto& f : settingsFields(settings)) values_["setting:" + f.key] = f.value; invalid_field_.clear(); }
-bool DemoUi::settingsDirty(const ViewState& state) const { for (const auto& f : settingsFields(state.settings)) { const auto it = values_.find("setting:" + f.key); if (it != values_.end() && it->second != f.value) return true; } return false; }
+bool DemoUi::settingsDirty(const ViewState& state) const { for (const auto& f : settingsFields(state.settings)) { const auto it = values_.find("setting:" + f.key); if ((page_ != "camera-settings" || cameraSetting(f.key)) && it != values_.end() && it->second != f.value) return true; } return false; }
 void DemoUi::settings(const ViewState& s, Rect b) {
     const char* tabs[] = {"detection", "flow", "search", "camera"}; const char* labels[] = {"Detection", "Liveness / verify", "Search", "Camera"}; const int tw = (b.w - 24) / 4;
-    for (int i = 0; i < 4; ++i) button({b.x + i * (tw + 8), b.y, tw, 34}, labels[i], std::string("settings-tab:") + tabs[i], settings_tab_ == tabs[i] ? 2 : 0, !s.busy);
-    const Rect r{b.x, b.y + 50, b.w, b.h - 112}; card(r); const int x = r.x + 20, y = r.y + 22, w = r.w - 40, half = (w - 20) / 2;
+    const bool camera_only = page_ == "camera-settings";
+    const std::string tab = camera_only ? "camera" : settings_tab_;
+    for (int i = 0; !camera_only && i < 4; ++i) button({b.x + i * (tw + 8), b.y, tw, 34}, labels[i], std::string("settings-tab:") + tabs[i], settings_tab_ == tabs[i] ? 2 : 0, !s.busy);
+    const Rect r{b.x, b.y + (camera_only ? 0 : 50), b.w, b.h - (camera_only ? 62 : 112)}; card(r); const int x = r.x + 20, y = r.y + 22, w = r.w - 40, half = (w - 20) / 2;
     auto f = [&](const char* key, const char* label, int px, int py, int width, bool enabled = true) { field({px, py, width, 56}, std::string("setting:") + key, label, "", !s.busy && enabled); };
     auto t = [&](const char* key, const char* label, int py, bool enabled = true) { toggle(x, py, w, std::string("setting:") + key, label, !s.busy && enabled); };
-    if (settings_tab_ == "detection") {
+    if (tab == "detection") {
         text(x, y + 12, "Face detection", ink, w); wrap(x, y + 39, "Choose how many faces to return and whether to show detailed landmarks and pose.", muted, w, 2, Font::Small);
         f("detection_faces", "Maximum faces (1..10)", x, y + 78, half); t("detailed", "468 landmarks and head pose", y + 170);
         wrap(x, y + 224, "Detailed analysis uses more CPU. Capture and liveness automatically prepare the capabilities they need.", muted, w, 3, Font::Small);
-    } else if (settings_tab_ == "flow") {
+    } else if (tab == "flow") {
         text(x, y + 12, "Actions and verification", ink, w); text(x, y + 39, "No actions = silent liveness. Up to four steps; repeats are allowed.", muted, w, Font::Small);
         const int aw = (w - 24) / 4; const char* actions[] = {"blink", "nod", "shake", "mouth"}; const char* names[] = {"Blink", "Nod head", "Shake head", "Open mouth"};
         const auto& sequence = values_["setting:actions"]; const int count = sequence.empty() ? 0 : 1 + std::count(sequence.begin(), sequence.end(), ',');
@@ -348,7 +427,7 @@ void DemoUi::settings(const ViewState& s, Rect b) {
         button({x + w - 130, y + 101, 60, 30}, "Undo", "actions-undo", 0, !s.busy && count > 0); button({x + w - 62, y + 101, 62, 30}, "Clear", "actions-clear", 0, !s.busy && count > 0);
         t("verification_liveness", "Silent liveness during verification", y + 156); t("allow_multiple", "Allow additional faces in a flow", y + 202);
         f("verification_threshold", "Verification threshold (0..1)", x, y + 252, half);
-    } else if (settings_tab_ == "search") {
+    } else if (tab == "search") {
         const bool multi = values_["setting:search_multi"] == "1";
         button({x, y, half, 34}, "1:N Single face", "search-single", multi ? 0 : 2, !s.busy); button({x + half + 20, y, half, 34}, "M:N Multiple faces", "search-multi", multi ? 2 : 0, !s.busy);
         t("search_liveness", multi ? "Liveness is unavailable in M:N" : "Silent liveness during search", y + 50, !multi);
@@ -359,7 +438,7 @@ void DemoUi::settings(const ViewState& s, Rect b) {
         wrap(x + half + 20, y + 275, "Group and tag match exactly. A liveness rejection always overrides an identity match.", muted, half, 3, Font::Small);
     } else {
         text(x, y + 12, "Camera preferences", ink, w); text(x, y + 39, "Reconnect the camera after applying video settings.", muted, w, Font::Small);
-        for (int i = 0; i < 3; ++i) button({x + i * 158, y + 60, 148, 32}, i == 0 ? "640 x 480" : i == 1 ? "1280 x 720" : "1920 x 1080", "resolution:" + std::to_string(i), 0, !s.busy);
+        for (int i = 0; i < 3; ++i) button({x + i * 158, y + 60, 148, 32}, i == 0 ? "640 x 360" : i == 1 ? "1280 x 720" : "1920 x 1080", "resolution:" + std::to_string(i), 0, !s.busy);
         const int third = (w - 24) / 3; f("camera_width", "Width (even)", x, y + 114, third); f("camera_height", "Height (even)", x + third + 12, y + 114, third); f("camera_fps", "Requested FPS (1..60)", x + third * 2 + 24, y + 114, third);
         t("camera_mjpeg", "Prefer MJPEG over YUYV", y + 204); t("mirror", "Mirror preview", y + 254);
     }
@@ -386,6 +465,7 @@ void DemoUi::selectImageFace(int index, const ViewState& state) {
     focused_.clear(); keyboard_focus_ = "image-face:" + std::to_string(selected_image_face_); select_all_ = false;
 }
 void DemoUi::scroll(int steps, int x, int y, const ViewState& state) {
+    if (page_ == "home" && !confirming_ && !browsing_ && !enrolling_) { home_scroll_ = std::clamp(home_scroll_ + steps * 96, 0, home_max_scroll_); keyboard_focus_.clear(); return; }
     if (page_ == "image-search" && !confirming_ && !browsing_ && !enrolling_ && image_result_area_.contains(x,y)) selectImageFace(selected_image_face_ + steps, state);
 }
 void DemoUi::submitField(const ViewState& state) {
@@ -399,26 +479,31 @@ void DemoUi::submitField(const ViewState& state) {
     else if (field.rfind("query-",0) == 0) action = "gallery-load";
     else if (field == "selected-group" || field == "selected-tag") { if (!values_["selected-id"].empty()) action = "metadata"; }
     else if (field.rfind("setting:",0) == 0 && !settings_pending_ && settingsDirty(state)) action = "settings-apply";
-    else if (field == "photo-a" && !values_["photo-a"].empty()) action = "image:detect";
+    else if (field == "photo-a" && !values_["photo-a"].empty() && !values_["photo-b"].empty()) action = "image:compare";
     else if (field == "photo-b" && !values_["photo-a"].empty() && !values_["photo-b"].empty()) action = "image:compare";
     if (action.empty()) { focused_.clear(); return; }
     // Use current field values: typing and Enter can arrive before the next paint.
+    // 读取当前字段值，因为输入和回车可能先于下一次绘制到达。
     focused_.clear(); keyboard_focus_ = action; handle(action, state);
     if (!invalid_field_.empty()) { focused_ = invalid_field_; keyboard_focus_ = "field:" + focused_; cursor_ = values_[focused_].size(); }
 }
 void DemoUi::page(const std::string& next, const ViewState& state, bool force) {
     if (next == page_) return;
     if (state.importing || state.busy) { notice_ = "Finish or stop the current operation before changing pages."; return; }
-    if (!force && next != page_ && page_ == "settings" && settingsDirty(state)) {
+    if (!force && next != page_ && settingsPage(page_) && settingsDirty(state)) {
         confirm({"ui-page", {next}, {}}, "Discard changes?", "Your settings have not been applied. Discard the draft and leave this page?"); return;
     }
-    page_ = next; focused_.clear(); keyboard_focus_.clear(); select_all_ = false; emit("page", {page_});
-    if (next == "settings") resetDraft(state.settings);
+    if (next != "home" && !demoPage(next)) return;
+    page_ = next; camera_menu_ = false; focused_.clear(); keyboard_focus_.clear(); select_all_ = false;
+    if (cameraPage(next)) selected_task_ = std::string(1, demoPage(next)->camera_mode);
+    emit("page", {page_});
+    if (settingsPage(next)) resetDraft(state.settings);
+    values_["photo-a"].clear(); values_["photo-b"].clear(); values_["feature-photo"].clear();
 }
 void DemoUi::requestClose(const ViewState& state) {
     if (confirming_ || browsing_ || enrolling_) dismissOverlay();
     if (state.importing) confirm({"ui-quit", {}, {}}, "Stop import and exit?", "Completed batches are already saved. The current batch will finish before the app closes.");
-    else if (page_ == "settings" && settingsDirty(state)) confirm({"ui-quit", {}, {}}, "Discard draft and exit?", "Your settings have not been applied. Saved face data will be kept.");
+    else if (settingsPage(page_) && settingsDirty(state)) confirm({"ui-quit", {}, {}}, "Discard draft and exit?", "Your settings have not been applied. Saved face data will be kept.");
     else running_ = false;
 }
 void DemoUi::readDirectory() {
@@ -441,6 +526,7 @@ void DemoUi::browse(const std::string& target) {
     readDirectory(); focused_ = "browser-path"; keyboard_focus_ = "field:browser-path"; cursor_ = values_[focused_].size(); select_all_ = true;
 }
 void DemoUi::handle(const std::string& action, const ViewState& state) {
+    if (action == "camera-menu") { camera_menu_ = !camera_menu_; focused_.clear(); keyboard_focus_.clear(); return; }
     if (action.rfind("image-face:", 0) == 0) { selectImageFace(std::stoi(action.substr(11)), state); return; }
     if (action.rfind("image-faces-prev:", 0) == 0) { selectImageFace(std::max(0, image_face_offset_ - image_face_rows_), state); return; }
     if (action.rfind("image-faces-next:", 0) == 0) { selectImageFace(image_face_offset_ + image_face_rows_, state); return; }
@@ -450,7 +536,7 @@ void DemoUi::handle(const std::string& action, const ViewState& state) {
         if (selected >= 0) selectImageFace(selected,state); return;
     }
     if (action == "quit") { requestClose(state); return; }
-    if (action == "cancel") { dismissOverlay(); return; }
+    if (action == "cancel") { if (enrolling_) emit("action", {"X"}); dismissOverlay(); return; }
     if (action == "confirm") {
         const auto command = pending_; dismissOverlay();
         if (command.type == "ui-quit") running_ = false;
@@ -470,7 +556,10 @@ void DemoUi::handle(const std::string& action, const ViewState& state) {
         std::error_code error; const bool directory = entry.is_directory(error);
         if (error) { browser_entries_.clear(); browser_offset_ = 0; browser_error_ = "Cannot read file: " + error.message(); return; }
         if (directory) { browser_directory_ = entry.path().string(); readDirectory(); }
-        else { const bool search = browser_target_ == "search-path"; values_[browser_target_] = entry.path().string(); dismissOverlay(); if (search) emit("image-search", {values_["search-path"]}); }
+        else { const auto target = browser_target_; values_[target] = entry.path().string(); dismissOverlay();
+            if (target == "search-path") emit("image-search", {values_[target]});
+            else if (target == "feature-photo") { camera_menu_ = false; emit("image", {page_ == "detection" ? "detect" : page_ == "capture" ? "reference" : "enroll", values_[target], "", "", "", ""}); }
+        }
         return;
     }
     if (action.rfind("library:", 0) == 0) { library_tab_ = action.substr(8); return; }
@@ -483,27 +572,29 @@ void DemoUi::handle(const std::string& action, const ViewState& state) {
         const bool multi = action == "search-multi"; values_["setting:search_multi"] = multi ? "1" : "0"; values_["setting:search_liveness"] = multi ? "0" : "1"; return;
     }
     if (action.rfind("resolution:", 0) == 0) {
-        const int index = std::stoi(action.substr(11)); const char* widths[] = {"640", "1280", "1920"}; const char* heights[] = {"480", "720", "1080"}; values_["setting:camera_width"] = widths[index]; values_["setting:camera_height"] = heights[index]; return;
+        const int index = std::stoi(action.substr(11)); const char* widths[] = {"640", "1280", "1920"}; const char* heights[] = {"360", "720", "1080"}; values_["setting:camera_width"] = widths[index]; values_["setting:camera_height"] = heights[index]; return;
     }
     if (action.rfind("add-action:", 0) == 0) {
         auto& sequence = values_["setting:actions"]; if (!sequence.empty()) sequence += ','; sequence += action.substr(11); return;
     }
     if (action == "actions-clear") { values_["setting:actions"].clear(); return; }
     if (action == "actions-undo") { auto& sequence = values_["setting:actions"]; const auto comma = sequence.find_last_of(','); sequence = comma == std::string::npos ? "" : sequence.substr(0, comma); return; }
-    if (action == "settings-defaults") { resetDraft(DemoSettings{}); return; }
+    if (action == "settings-defaults") {
+        if (page_ == "camera-settings") { for (const auto& f : settingsFields(DemoSettings{})) if (cameraSetting(f.key)) values_["setting:" + f.key] = f.value; }
+        else resetDraft(DemoSettings{}); return;
+    }
     if (!state.ready) { notice_ = "The SDK is still loading. Please wait."; return; }
     if (action == "image-search" && values_["search-path"].empty()) { invalid_field_ = "search-path"; notice_ = "Choose a photo or enter its path before searching."; return; }
     if (action == "image-search" || action == "cancel-image-search") { emit(action, action == "image-search" ? std::vector<std::string>{values_["search-path"]} : std::vector<std::string>{}); return; }
     if (action == "image:search") { values_["search-path"] = values_["photo-a"]; page("image-search", state); emit("image-search", {values_["search-path"]}); return; }
     if (action == "start-task") { handle("mode:" + selected_task_, state); return; }
-    if (action == "mode:E" || action == "image:enroll") {
-        beginOverlay(); enrolling_ = true; photo_enrollment_ = action == "image:enroll"; focused_ = photo_enrollment_ ? "photo-id" : "enroll-id"; cursor_ = values_[focused_].size(); keyboard_focus_ = "field:" + focused_; return;
-    }
     if (action == "enrollment-start") {
-        if (photo_enrollment_ && values_["photo-id"].empty()) { invalid_field_ = focused_ = "photo-id"; keyboard_focus_ = "field:photo-id"; cursor_ = 0; notice_ = "Enter a face ID before enrolling this photo."; return; }
-        if (photo_enrollment_) emit("image", {"enroll", values_["photo-a"], "", values_["photo-id"], values_["photo-group"], values_["photo-tag"]});
-        else emit("enroll", {values_["enroll-id"], values_["enroll-group"], values_["enroll-tag"]});
-        dismissOverlay(); return;
+        if (values_["enroll-id"].find_first_not_of(" \t\r\n") == std::string::npos) { invalid_field_ = focused_ = "enroll-id"; keyboard_focus_ = "field:enroll-id"; cursor_ = 0; notice_ = "Enter a face ID before confirming enrollment."; return; }
+        emit("confirm-enrollment", {values_["enroll-id"], values_["enroll-group"], values_["enroll-tag"]}); return;
+    }
+    if (action == "enrollment-retake") {
+        emit("action", {"X"}); dismissOverlay();
+        if (state.connected) emit("action", {"E"}); else browse("feature-photo"); return;
     }
     if (action.rfind("mode:", 0) == 0) emit("action", {action.substr(5)});
     else if (action == "connect") emit("connect", {values_["device"]});
@@ -525,7 +616,7 @@ void DemoUi::handle(const std::string& action, const ViewState& state) {
     else if (action == "import-features" || action == "import-images") confirm({"import", {values_["exchange-path"], action == "import-images" ? "images" : "features", values_["query-group"]}, {}}, "Import into your library?", "Entries with matching IDs will be replaced. Stopping the import keeps completed batches.");
     else if (action == "settings-apply") {
         Command command{"settings", {}, settingsFields(state.settings)};
-        for (auto& f : command.fields) f.value = values_["setting:" + f.key];
+        for (auto& f : command.fields) if (page_ != "camera-settings" || cameraSetting(f.key)) f.value = values_["setting:" + f.key];
         try { parseSettings(command.fields); }
         catch (const DemoError& error) {
             notice_ = error.message;
@@ -582,8 +673,14 @@ void DemoUi::key(Key key_value, const std::string& value, bool shift, const View
         if (confirming_ || browsing_ || enrolling_) handle("cancel", state);
         else if (page_ == "image-search" && state.photo_search_busy) { focused_.clear(); keyboard_focus_.clear(); emit("cancel-image-search"); }
         else if (!focused_.empty()) { focused_.clear(); keyboard_focus_.clear(); select_all_ = false; }
-        else if (page_ == "camera" && state.ready && !state.busy) emit("action", {"X"});
+        else if (cameraPage(page_) && state.ready && !state.busy && state.mode != 'D') emit("action", {"X"});
+        else page("home", state);
         return;
+    }
+    if (page_ == "home" && !confirming_ && !browsing_ && !enrolling_ &&
+        (key_value == Key::PreviousPage || key_value == Key::NextPage || key_value == Key::Home || key_value == Key::End)) {
+        home_scroll_ = key_value == Key::Home ? 0 : key_value == Key::End ? home_max_scroll_ :
+            std::clamp(home_scroll_ + (key_value == Key::NextPage ? 240 : -240), 0, home_max_scroll_); keyboard_focus_.clear(); return;
     }
     if (key_value >= Key::Page1 && key_value <= Key::Page5) {
         if (!confirming_ && !browsing_ && !enrolling_) { const char* pages[] = {"camera", "images", "gallery", "settings", "image-search"}; page(pages[int(key_value) - int(Key::Page1)], state); }
@@ -624,9 +721,12 @@ void DemoUi::key(Key key_value, const std::string& value, bool shift, const View
         if (key_value == Key::End) { selectImageFace(state.photo_search ? int(state.photo_search->faces.size())-1 : 0,state); return; }
         if (key_value == Key::PreviousPage || key_value == Key::NextPage) { selectImageFace(selected_image_face_ + (key_value == Key::PreviousPage ? -image_face_rows_ : image_face_rows_),state); return; }
     }
-    if (key_value == Key::Text && value.size() == 1 && page_ == "camera" && content_enabled_) {
+    if (key_value == Key::Text && value.size() == 1 && cameraPage(page_) && content_enabled_) {
         const char c = char(std::toupper(static_cast<unsigned char>(value[0])));
-        if (std::string("DCLVESX").find(c) != std::string::npos && state.connected) handle(std::string("mode:") + c, state);
+        if (c == 'X' && state.connected) handle("mode:X", state);
+        else if (std::string("DCLVES").find(c) != std::string::npos) {
+            for (const auto& feature : demo_pages) if (feature.camera_mode == c) { page(feature.route, state); break; }
+        }
         else if (c == 'M') handle("mirror", state); else if (c == 'N') handle("next", state);
         else if (c == 'P' && (state.mode == 'S' || state.mode == 'P')) handle("pause", state); else if (c == 'Q') requestClose(state);
     }
@@ -661,16 +761,18 @@ void DemoUi::browser() {
 void DemoUi::modal(const ViewState& state) {
     if (browsing_) { browser(); return; }
     if (!confirming_ && !enrolling_) return;
-    controls_.clear(); const int w = std::min(590, scene_.width - 100), h = enrolling_ ? 358 : 250, x = (scene_.width - w) / 2, y = (scene_.height - h) / 2;
+    controls_.clear(); const int w = std::min(590, scene_.width - 100), h = enrolling_ ? 420 : 250, x = (scene_.width - w) / 2, y = (scene_.height - h) / 2;
     scene_.box({0, 0, scene_.width, scene_.height}, 0x253342); card({x, y, w, h});
     text(x + 24, y + 38, enrolling_ ? "Enroll a face" : confirm_title_, ink, w - 48, Font::Title);
     if (enrolling_) {
-        const auto prefix = photo_enrollment_ ? "photo-" : "enroll-";
-        field({x + 24, y + 68, w - 48, 56}, std::string(prefix) + "id", photo_enrollment_ ? "Face ID (required)" : "Face ID (empty = automatic)");
-        field({x + 24, y + 140, (w - 64) / 2, 56}, std::string(prefix) + "group", "Group");
-        field({x + 40 + (w - 64) / 2, y + 140, (w - 64) / 2, 56}, std::string(prefix) + "tag", "Tag");
-        wrap(x + 24, y + 235, notice_.empty() ? "Duplicate IDs are rejected. The new face is saved after capture succeeds." : notice_, notice_.empty() ? muted : danger, w - 48, 2, Font::Small);
-        button({x + w - 224, y + h - 62, 200, 38}, photo_enrollment_ ? "Enroll photo" : "Start enrollment", "enrollment-start", 1, content_enabled_);
+        picture({x + 24, y + 64, 128, 128}, state.aligned_preview.get(), nullptr, false, {});
+        field({x + 176, y + 68, w - 200, 56}, "enroll-id", "Face ID (required)");
+        field({x + 176, y + 140, (w - 212) / 2, 56}, "enroll-group", "Group");
+        field({x + 188 + (w - 212) / 2, y + 140, (w - 212) / 2, 56}, "enroll-tag", "Tag");
+        wrap(x + 24, y + 242, !notice_.empty() ? notice_ : state.failed ? friendly(state.status) : "Review this capture. Nothing is saved until you confirm. Duplicate IDs are rejected.",
+             !notice_.empty() || state.failed ? danger : muted, w - 48, 3, Font::Small);
+        button({x + 146, y + h - 62, 108, 38}, "Retake", "enrollment-retake", 0, content_enabled_);
+        button({x + w - 224, y + h - 62, 200, 38}, "Confirm and save", "enrollment-start", 1, content_enabled_ && state.pending_enrollment);
     } else {
         wrap(x + 24, y + 82, confirm_message_, muted, w - 48, 5);
         button({x + w - 184, y + h - 62, 160, 38}, pending_.type == "ui-quit" ? "Exit" : "Confirm", "confirm", pending_.type == "delete" ? 3 : 1, !state.busy);
@@ -682,13 +784,24 @@ const Scene& DemoUi::render(const ViewState& state, int width, int height) {
     content_enabled_ = state.ready && !state.busy && !state.importing;
     if (state.ready && !initialized_) { initialized_ = true; values_["device"] = state.device; values_["exchange-path"] = state.data_directory + "/features.json"; resetDraft(state.settings); }
     if (settings_pending_ && state.settings_attempt > settings_attempt_) { settings_pending_ = false; if (!state.failed) resetDraft(state.settings); }
+    if (page_ == "enrollment" && state.pending_enrollment && state.enrollment_generation != enrollment_generation_) {
+        enrollment_generation_ = state.enrollment_generation; beginOverlay(); enrolling_ = true;
+        focused_ = "enroll-id"; keyboard_focus_ = "field:enroll-id"; cursor_ = values_[focused_].size();
+    }
+    if (enrolling_ && !state.pending_enrollment && !state.busy) dismissOverlay();
+    if (page_ == "home") { home(state, {0, 0, width, height}); modal(state); return scene_; }
+    if (cameraPage(page_)) {
+        camera(state, {0, 0, width, height});
+        modal(state);
+        return scene_;
+    }
     scene_.box({0, 0, width, height}, background); const int sidebar = 176, cx = sidebar + 24, cw = width - cx - 24;
     scene_.box({0, 0, sidebar, height}, dark);
     scene_.box({20, 24, 36, 36}, accent, 10); text(27, 48, "HF", 0xffffff, 28);
     text(67, 42, "HiFace", 0xffffff, 94); text(67, 59, "Linux Demo", 0x9badbf, 100, Font::Small);
-    const char* pages[] = {"camera", "images", "gallery", "settings", "image-search"}; const char* labels[] = {"Camera", "Photos / 1:1", "Face library", "Settings", "Image search"};
-    const char* subtitles[] = {"Live camera", "Compare photos", "Manage identities", "Preferences", "Search every face"};
-    for (int i = 0; i < 5; ++i) {
+    const char* pages[] = {"home", "images", "gallery", "settings", "image-search", "camera-settings"}; const char* labels[] = {"Home", "Photo comparison", "Face library", "Advanced settings", "Image search", "Camera settings"};
+    const char* subtitles[] = {"All features", "Compare photos", "Manage identities", "Preferences", "Search every face", "Video preferences"};
+    for (int i = 0; i < 6; ++i) {
         const Rect r{12, 112 + i * 68, sidebar - 24, 54}; const bool active = page_ == pages[i], enabled = !state.busy && !state.importing;
         scene_.box(r, active ? 0x24483e : enabled && r.contains(pointer_x_, pointer_y_) ? 0x223247 : dark, 9);
         if (active) scene_.box({r.x, r.y + 12, 3, 30}, 0x79e3c0, 1);
@@ -699,15 +812,15 @@ const Scene& DemoUi::render(const ViewState& state, int width, int height) {
     }
     text(22, height - 104, state.ready ? "SDK ready" : state.failed ? "SDK unavailable" : "Loading SDK...", state.ready ? 0x79e3c0 : state.failed ? 0xff9696 : 0xaebfd1, sidebar - 44, Font::Small);
     button({16, height - 70, sidebar - 32, 36}, "Exit Demo", "quit", 4);
-    int page_index = 0; for (int i = 0; i < 5; ++i) if (page_ == pages[i]) page_index = i;
-    const char* descriptions[] = {"Preview, capture, verify and search faces", "Compare, enroll or search local photos", "Find identities and manage your face library", "Configure detection, flows, search and video", "Find every face in one photo"};
+    int page_index = 0; for (int i = 0; i < 6; ++i) if (page_ == pages[i]) page_index = i;
+    const char* descriptions[] = {"Preview, capture, verify and search faces", "Compare two photos without liveness", "Find identities and manage your face library", "Configure detection, flows, search and video", "Find every face in one photo", "Saved video format and mirror preferences"};
     text(cx, 40, labels[page_index], ink, cw - 300, Font::Title); text(cx, 67, descriptions[page_index], muted, cw - 300, Font::Small);
     const bool photo_page = page_ == "image-search";
     const std::string metrics[] = {photo_page ? state.photo_search_busy ? "..." : state.photo_search ? std::to_string(state.photo_search->faces.size()) + " faces" : "--" : number(state.fps) + " FPS",
         photo_page && (state.photo_search_busy || !state.photo_search) ? "--" : number(state.milliseconds) + " ms", std::to_string(photo_page && state.photo_search ? state.photo_search->library_count : state.count) + " faces"};
     for (int i = 0; i < 3; ++i) { const int x = width - 304 + i * 96; text(x, 35, metrics[i], i == 2 ? accent : ink, 90); text(x, 57, i == 0 ? photo_page ? "Detected" : "Analysis loop" : i == 1 ? photo_page ? "Photo search" : "Last analysis" : "Library", muted, 90, Font::Small); }
     const Rect body{cx, 104, cw, height - 202};
-    if (page_ == "camera") camera(state, body); else if (page_ == "images") photos(state, body); else if (page_ == "gallery") library(state, body); else if (page_ == "image-search") imageSearch(state, body); else settings(state, body);
+    if (page_ == "images") photos(state, body); else if (page_ == "gallery") library(state, body); else if (page_ == "image-search") imageSearch(state, body); else settings(state, body);
     const bool rejected = state.status.find("Rejected") != std::string::npos || state.status.find("Not matched") != std::string::npos || state.status.find("timeout") != std::string::npos;
     const bool error = state.failed || !notice_.empty();
     const bool warning = !error && !state.busy && (rejected || photo_page && state.photo_search && (state.photo_search->library_count == 0 || !state.photo_search->faces.empty() && state.photo_search->matched == 0));
@@ -717,5 +830,8 @@ const Scene& DemoUi::render(const ViewState& state, int width, int height) {
     wrap(cx + 32, height - 53, friendly(notice_.empty() ? state.busy ? "Working... " + state.status : state.status : notice_), status_color, cw - 48, 2, Font::Small);
     modal(state); return scene_;
 }
-void DemoUi::pageForSmoke(unsigned index) { const char* names[] = {"camera", "images", "gallery", "settings", "image-search"}; page_ = names[index % 5]; }
+void DemoUi::pageForSmoke(unsigned index) {
+    page_ = smoke_pages[index % smoke_page_count]; camera_menu_ = false;
+    if (cameraPage(page_)) selected_task_ = std::string(1, demoPage(page_)->camera_mode);
+}
 }

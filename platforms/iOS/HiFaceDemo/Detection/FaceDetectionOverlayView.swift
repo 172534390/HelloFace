@@ -24,6 +24,7 @@ struct FaceDetectionOverlayView: View {
                 guard let result, result.imageWidth > 0, result.imageHeight > 0 else { return }
                 let imageWidth = CGFloat(result.imageWidth)
                 let imageHeight = CGFloat(result.imageHeight)
+                // Match preview-layer resizeAspect: show the entire image and account for centered padding.
                 // 与预览层的 resizeAspect 一致：完整显示画面，并计入居中留边。
                 let scale = CameraPreviewLayout.scale(
                     view: size, image: CGSize(width: imageWidth, height: imageHeight)
@@ -41,6 +42,8 @@ struct FaceDetectionOverlayView: View {
                     var x = CGFloat(face.bounds.x) * scale + offsetX
                     let width = CGFloat(face.bounds.width) * scale
                     if mirrored { x = size.width - x - width }
+                    // Match Android by widening only display boxes 10% per side; landmarks and SDK coordinates stay
+                    // unchanged.
                     // 与 Android 一致，仅把显示框左右各扩大 10%；关键点和 SDK 坐标保持原值。
                     let rect = FaceOverlayLayout.expandedFaceRect(CGRect(
                         x: x,

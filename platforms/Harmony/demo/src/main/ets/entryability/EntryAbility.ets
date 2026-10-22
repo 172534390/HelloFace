@@ -5,7 +5,11 @@ import { window } from '@kit.ArkUI';
 
 const DOMAIN: number = 0xFF00;
 
-/** Demo 唯一 Ability：只加载首页，SDK 初始化和功能导航由 Index 管理。 */
+/**
+ * The Demo's only Ability loads the home screen; Index manages SDK initialization and navigation.
+ *
+ * Demo 唯一 Ability：只加载首页，SDK 初始化和功能导航由 Index 管理。
+ */
 export default class EntryAbility extends UIAbility {
   onCreate(_want: Want, _launchParam: AbilityConstant.LaunchParam): void {
     DemoL10n.configure(this.context.resourceManager);

@@ -14,7 +14,12 @@ import com.hiface.sdk.search.FaceSearchSessionConfig;
 import com.hiface.sdk.search.FaceSearchMode;
 import com.hiface.sdk.search.FaceSearchProgress;
 
-/** 搜索专用的状态文案与控件展示；SDK 调用和识别结果处理仍由 Activity 演示。 */
+/**
+ * Search-specific text and controls; the Activity still demonstrates SDK calls and recognition-result
+ * handling.
+ *
+ * 搜索专用的状态文案与控件展示；SDK 调用和识别结果处理仍由 Activity 演示。
+ */
 final class FaceSearchStatusUi {
     private final Context context;
     private final TextView status;
@@ -34,13 +39,22 @@ final class FaceSearchStatusUi {
         stateDot = root.findViewById(R.id.searchStateDot);
     }
 
-    /** 显示启动或恢复时的准备提示，并隐藏上一次错误的重试按钮。 */
+    /**
+     * Show preparation guidance on start or resume and hide the previous error's retry button.
+     *
+     * 显示启动或恢复时的准备提示，并隐藏上一次错误的重试按钮。
+     */
     void showPreparing() {
         showState(R.string.search_ui_preparing, R.string.search_ui_preparing_hint,
                 R.color.search_accent, false);
     }
 
-    /** 仅为原会话能恢复的错误提供重试；其余提示修复原因后重新进入。 */
+    /**
+     * Offer retry only for errors recoverable by the same session; otherwise ask users to fix the cause
+     * and reenter.
+     *
+     * 仅为原会话能恢复的错误提供重试；其余提示修复原因后重新进入。
+     */
     void showError(HiFaceError error) {
         boolean canRetry = SearchUi.canResumeSearch(error);
         showState(R.string.search_ui_paused,
@@ -48,7 +62,11 @@ final class FaceSearchStatusUi {
                 R.color.search_error_color, canRetry);
     }
 
-    /** 展示当前搜索模式与活体开关，活体开关属于配置信息。 */
+    /**
+     * Display the current search mode and configured liveness switch.
+     *
+     * 展示当前搜索模式与活体开关，活体开关属于配置信息。
+     */
     void renderConfig(FaceSearchSessionConfig config) {
         if (config.getMode() == FaceSearchMode.MULTI_FACE) {
             options.setText(R.string.search_ui_multi_options);
@@ -60,8 +78,14 @@ final class FaceSearchStatusUi {
         }
     }
 
-    /** 把 SDK 阶段映射为操作引导，并按单人/多人模式展示检测与选中人数。 */
+    /**
+     * Map SDK stages to instructions and display detected/selected face counts for single- or multi-face
+     * mode.
+     *
+     * 把 SDK 阶段映射为操作引导，并按单人/多人模式展示检测与选中人数。
+     */
     void renderProgress(FaceSearchProgress progress, FaceSearchSessionConfig config) {
+        // Map explicit enum meanings rather than relying on ordinal order matching two resource arrays.
         // 按枚举含义映射，不依赖 ordinal 与两份资源数组保持相同顺序。
         switch (progress.getStage()) {
             case WAITING_FOR_FACE:
@@ -91,17 +115,30 @@ final class FaceSearchStatusUi {
         }
     }
 
-    /** 清除旧帧的多人提示，供单人帧、暂停和重置界面时使用。 */
+    /**
+     * Clear stale multi-face hints for single-face frames, pauses, and UI resets.
+     *
+     * 清除旧帧的多人提示，供单人帧、暂停和重置界面时使用。
+     */
     void clearPeopleHint() {
         people.setVisibility(View.GONE);
     }
 
-    /** 统一使用进行中色彩显示搜索阶段，同时隐藏技术错误的重试入口。 */
+    /**
+     * Use the in-progress color for search stages and hide technical-error retry controls.
+     *
+     * 统一使用进行中色彩显示搜索阶段，同时隐藏技术错误的重试入口。
+     */
     private void showProgress(@StringRes int title, @StringRes int hint) {
         showState(title, hint, R.color.search_accent, false);
     }
 
-    /** 一次更新标题、引导、状态点和重试按钮，避免沿用上一状态的控件样式。 */
+    /**
+     * Update title, instructions, status dot, and retry button together to avoid reusing styles from the
+     * previous state.
+     *
+     * 一次更新标题、引导、状态点和重试按钮，避免沿用上一状态的控件样式。
+     */
     private void showState(@StringRes int title, @StringRes int hint,
             @ColorRes int color, boolean canRetry) {
         status.setText(title);

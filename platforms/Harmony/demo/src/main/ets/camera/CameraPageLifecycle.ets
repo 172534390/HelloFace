@@ -1,4 +1,9 @@
-/** @Entry 的前后台事件直接通知相机页，不依赖后台是否还有 UI 重绘。 */
+/**
+ * Forward @Entry foreground/background events directly to the camera screen, independent of background
+ * UI redraws.
+ *
+ * @Entry 的前后台事件直接通知相机页，不依赖后台是否还有 UI 重绘。
+ */
 export class CameraPageLifecycle {
   private leaveHandler: (() => void) | undefined = undefined;
   private bindingSequence: number = 0;

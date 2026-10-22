@@ -1,5 +1,6 @@
 import XCTest
 
+/// Run on a real device: verify recovery from raw capture timestamps, not isRunning or screen presence.
 /// 必须在真机执行：通过原始采集帧时间戳验证恢复，不能以 isRunning 或页面存在代替出帧。
 final class CameraLifecycleUITests: XCTestCase {
     override func setUpWithError() throws {
@@ -35,6 +36,7 @@ final class CameraLifecycleUITests: XCTestCase {
         let frame = app.staticTexts["camera.liveFrame"].firstMatch
         XCTAssertTrue(frame.waitForExistence(timeout: 10))
         waitForFrames(frame, after: 0)
+        // Repeated transitions cover active to inactive to background to inactive to active.
         // 多轮切换覆盖 active → inactive → background → inactive → active。
         for _ in 0..<3 {
             XCUIDevice.shared.press(.home)
@@ -61,6 +63,7 @@ final class CameraLifecycleUITests: XCTestCase {
 }
 
 /// Static image search works without a camera and can run on a simulator.
+/// 静态图片搜索无需相机，可在模拟器运行。
 final class ImageFaceSearchUITests: XCTestCase {
     @MainActor
     func testAlbumCancelPreservesEmptyState() {

@@ -17,7 +17,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** 预览优先 VGA；分析最多尝试三个接近 720P 的实际尺寸，最后使用默认尺寸。 */
+/**
+ * Prefer VGA preview; try at most three advertised analysis sizes near 720P, then use the default
+ * size.
+ *
+ * 预览优先 VGA；分析最多尝试三个接近 720P 的实际尺寸，最后使用默认尺寸。
+ */
 final class CameraResolutions {
     static final Size DEFAULT = new Size(640, 480);
     private static final long HIGH_PIXELS = 1280L * 720;

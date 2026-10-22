@@ -3,7 +3,12 @@ import { OutlinedCanvasText } from '../ui/OutlinedCanvasText';
 import { PreviewCoordinateTransform } from '../ui/PreviewCoordinateTransform';
 import { FaceSearchOverlayState, FaceSearchOverlayVisual } from './FaceSearchOverlayState';
 
-/** 搜索框坐标与 Android 一致；标签使用不遮挡预览画面的白字深灰描边。 */
+/**
+ * Match Android search-box coordinates; white text with dark-gray outlines preserves preview
+ * visibility.
+ *
+ * 搜索框坐标与 Android 一致；标签使用不遮挡预览画面的白字深灰描边。
+ */
 export class FaceSearchOverlay {
   static draw(context: CanvasRenderingContext2D, state: FaceSearchOverlayState,
     width: number, height: number, mirrored: boolean, now: number): void {
@@ -13,12 +18,14 @@ export class FaceSearchOverlay {
     const transform: PreviewCoordinateTransform = PreviewCoordinateTransform.fill(
       frame.imageWidth, frame.imageHeight, width, height, mirrored);
     context.save();
+    // Match Android's 14 * density size so text does not shrink on high-density screens.
     // 对齐 Android 的 14 * density，避免物理像素字号在高密度屏幕上缩小。
     context.font = '14vp sans-serif';
     context.lineWidth = 2;
     for (let index: number = 0; index < frame.faces.length; index += 1) {
       const face: FaceSearchFace = frame.faces[index];
       const bounds = face.bounds;
+      // Android widens mapped boxes by 10% per side without changing their top/bottom bounds.
       // Android 只在映射完成后左右各扩 10%，不改变框的上下边界。
       const sourceX: number = bounds.x - bounds.width * 0.1;
       const sourceWidth: number = bounds.width * 1.2;

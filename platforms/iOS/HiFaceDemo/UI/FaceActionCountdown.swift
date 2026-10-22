@@ -1,5 +1,7 @@
 import Foundation
 
+/// Match Android: one countdown spans the full action sequence without restarting on action changes or
+/// brief face loss.
 /// 与 Android 一致：整个动作序列共用一条倒计时，换动作或短暂丢脸不会重置。
 struct FaceActionCountdown {
     private(set) var deadline: TimeInterval?

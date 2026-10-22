@@ -18,12 +18,20 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** Demo 中人脸流程进度、动作和业务失败的统一展示映射。 */
+/**
+ * Shared presentation mapping for face-flow progress, actions, and business rejections in the Demo.
+ *
+ * Demo 中人脸流程进度、动作和业务失败的统一展示映射。
+ */
 public final class FaceFlowUi {
     private static final SecureRandom RANDOM = new SecureRandom();
     private FaceFlowUi() {}
 
-    /** 每轮生成不重复的动作；业务可替换为自己的挑战策略。 */
+    /**
+     * Generate distinct actions for each round; applications may supply their own challenge policy.
+     *
+     * 每轮生成不重复的动作；业务可替换为自己的挑战策略。
+     */
     @NonNull
     public static List<FaceAction> randomActions(int count) {
         ArrayList<FaceAction> actions = new ArrayList<>(Arrays.asList(FaceAction.values()));
@@ -34,7 +42,11 @@ public final class FaceFlowUi {
         return new ArrayList<>(actions.subList(0, count));
     }
 
-    /** 活体与动态 1:1 的动作进度映射；引导采集单独使用 CaptureStatusUi。 */
+    /**
+     * Map action progress for liveness and dynamic 1:1; guided capture uses CaptureStatusUi separately.
+     *
+     * 活体与动态 1:1 的动作进度映射；引导采集单独使用 CaptureStatusUi。
+     */
     private static void renderFlowProgress(
             @NonNull FaceCaptureOverlayView overlay,
             @NonNull FaceFlowProgress progress,
@@ -66,6 +78,8 @@ public final class FaceFlowUi {
                 return;
             case FACE_NOT_FRONTAL:
             case FACE_FORWARD:
+                // Both stages mean a valid frontal face is not yet available; one prompt avoids flashing synonymous
+                // messages.
                 // 两个阶段都表示尚未取得合格正脸，统一文案避免连续闪过两种同义提示。
                 overlay.setStatusText(R.string.liveness_face_forward);
                 overlay.resetCountdown();
@@ -78,6 +92,11 @@ public final class FaceFlowUi {
     }
 
     /**
+     * Shared by liveness and combined dynamic 1:1 authentication: stability is timed in the background
+     * while the UI retains the frontal prompt without a ring animation. The SDK delivers all Core stages;
+     * only this presentation layer merges synonymous FACE_FORWARD, FACE_NOT_FRONTAL, and HOLD_STILL
+     * prompts.
+     *
      * 活体页与动态 1:1 复合认证页共用：稳定阶段在后台计时，界面保持正对提示且不播放
      * 圆环倒计时动画。SDK 完整交付 Core 阶段，FACE_FORWARD、FACE_NOT_FRONTAL 与 HOLD_STILL
      * 的同义提示只在本展示层合并，不屏蔽 SDK 进度事件。
@@ -95,7 +114,11 @@ public final class FaceFlowUi {
         renderFlowProgress(overlay, progress, actionTimeoutMillis);
     }
 
-    /** 未通过的业务终态 -> Demo 文案。PASSED 由各页面自己出成功文案，不走这里。 */
+    /**
+     * Map rejected business outcomes to Demo text. Screens handle PASSED messages themselves.
+     *
+     * 未通过的业务终态 -> Demo 文案。PASSED 由各页面自己出成功文案，不走这里。
+     */
     @NonNull
     public static String rejectionMessage(
             @NonNull Context context,
@@ -111,9 +134,12 @@ public final class FaceFlowUi {
     ) {
         overlay.setStatusText(message);
         if (actionPending) {
+            // The total action deadline does not pause for brief face loss, multiple faces, or distance changes;
+            // retain the same ring countdown.
             // 动作总时限不会因短暂丢脸、多人或距离变化而暂停，圆环也保持同一倒计时。
             overlay.resetCountdownIfIdle();
         } else {
+            // After the final frontal hold is interrupted, the next HOLD_STILL must restart from a full ring.
             // 最终正脸保持被打断后，下一次 HOLD_STILL 必须重新从完整圆环开始。
             overlay.resetCountdown();
         }
@@ -149,6 +175,7 @@ public final class FaceFlowUi {
                 return R.string.verification_failed_not_matched;
             case PASSED:
             default:
+                // Use fallback text for new SDK outcomes rather than crashing the Demo.
                 // SDK 追加新的终态时走到这里；显示一句兜底，而不是崩在 Demo 里。
                 return R.string.liveness_result_rejected;
         }

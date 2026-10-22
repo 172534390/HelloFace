@@ -18,6 +18,15 @@ std::ofstream log_output;
 size_t log_bytes = 0;
 }
 std::filesystem::path demoDataDirectory() {
+    const auto length = GetEnvironmentVariableW(L"HIFACE_DATA_DIR", nullptr, 0);
+    if (length) {
+        std::wstring value(length, L'\0');
+        const auto copied = GetEnvironmentVariableW(L"HIFACE_DATA_DIR", value.data(), length);
+        if (!copied || copied >= length) throw std::runtime_error("Cannot read HIFACE_DATA_DIR");
+        value.resize(copied); const std::filesystem::path directory(value);
+        if (!directory.is_absolute()) throw std::runtime_error("HIFACE_DATA_DIR must be an absolute directory");
+        return directory;
+    }
     PWSTR raw = nullptr;
     checkHr(SHGetKnownFolderPath(FOLDERID_LocalAppData, KF_FLAG_CREATE, nullptr, &raw), "Find application data directory");
     const std::filesystem::path directory(raw); CoTaskMemFree(raw);
@@ -50,6 +59,7 @@ void writeLog(const std::string& message) noexcept {
         std::lock_guard<std::mutex> lock(log_mutex);
         OutputDebugStringW((widen(message) + L"\n").c_str());
         // Bound each run's diagnostic output; never log pixels or feature bytes.
+        // 限制每次运行的诊断输出，绝不记录像素或特征字节。
         if (log_output && log_bytes < 4 * 1024 * 1024) {
             SYSTEMTIME time{}; GetLocalTime(&time);
             log_output << std::setfill('0') << std::setw(2) << time.wHour << ':' << std::setw(2) << time.wMinute
@@ -57,7 +67,7 @@ void writeLog(const std::string& message) noexcept {
                 << " " << message << '\n';
             log_output.flush(); log_bytes += message.size() + 15;
         }
-    } catch (...) { /* Logging must not interrupt capture or cross a C callback. */ }
+    } catch (...) { /* Logging must not interrupt capture or cross a C callback. / 日志不能中断采集，异常不能越过 C 回调边界。 */ }
 }
 void checkHr(HRESULT status, const char* operation) {
     if (SUCCEEDED(status)) return;
@@ -111,6 +121,7 @@ Image readImage(const std::filesystem::path& path, bool fit_to_sdk_limit) {
         throw std::runtime_error("Image dimensions must be between 2 and 4096");
 
     // Apply JPEG/TIFF EXIF orientation before producing the public RGBA input.
+    // 生成公开 RGBA 输入前先应用 JPEG/TIFF EXIF 方向。
     ComPtr<IWICBitmapSource> source = frame;
     ComPtr<IWICMetadataQueryReader> metadata;
     if (SUCCEEDED(frame->GetMetadataQueryReader(&metadata))) {
@@ -141,6 +152,7 @@ Image readImage(const std::filesystem::path& path, bool fit_to_sdk_limit) {
     if (width > HIFACE_MAX_IMAGE_DIMENSION || height > HIFACE_MAX_IMAGE_DIMENSION) {
         // Image search preserves original face scale within 4096px, matching Android.
         // WIC scales only oversized inputs, then even-size cropping removes at most 1px.
+        // 与 Android 一致，图片搜索在 4096px 内保留原始人脸尺度；WIC 仅缩放超限输入，偶数裁剪最多去掉 1px。
         const auto longest = std::max(width, height);
         const UINT scaled_width = static_cast<UINT>(uint64_t{width} * HIFACE_MAX_IMAGE_DIMENSION / longest);
         const UINT scaled_height = static_cast<UINT>(uint64_t{height} * HIFACE_MAX_IMAGE_DIMENSION / longest);
@@ -152,6 +164,7 @@ Image readImage(const std::filesystem::path& path, bool fit_to_sdk_limit) {
     }
     // Preserve face scale: discard at most the final row/column to satisfy the
     // existing even-size RGBA detection contract, rather than stretching pixels.
+    // 保留人脸尺度；为满足现有 RGBA 偶数尺寸契约，最多丢弃末行或末列，不拉伸像素。
     width &= ~1u; height &= ~1u;
     Image image{static_cast<int>(width), static_cast<int>(height), std::vector<uint8_t>(size_t(width) * height * 4)};
     ComPtr<IWICFormatConverter> converter;
@@ -194,6 +207,7 @@ void testWindowsImageDecoder() {
     } cleanup{directory};
     // An independent 3x3, bottom-up BGR24 BMP with padded rows. The decoded
     // top-left must be red, second row green; odd final row/column are cropped.
+    // 独立的 3x3 自底向上 BGR24 BMP，含行填充；解码后左上角应为红色、第二行为绿色，奇数末行或末列被裁掉。
     std::vector<uint8_t> bitmap(54 + 12 * 3, 0);
     auto u32 = [&](size_t offset, uint32_t value) {
         for (int i = 0; i < 4; ++i) bitmap[offset + i] = static_cast<uint8_t>(value >> (8 * i));

@@ -1,5 +1,6 @@
 #include "demo_service.h"
 #include "data_exchange.h"
+#include "enrollment_draft.h"
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -94,6 +95,7 @@ void runSelfTest() {
     }
     // Open a new Session/connection against the on-disk, Unicode path. This
     // exercises the persistence contract used by the camera Demo after restart.
+    // 对磁盘上的 Unicode 路径重新打开 Session 和连接，验证相机 Demo 重启后使用的持久化契约。
     {
         DemoService reopened(database);
         const auto matches = reopened.query(feature);
@@ -141,7 +143,31 @@ void runSelfTest() {
         require(imported.remove(u8"人员😀") == 1 && imported.remove(u8"人员😀") == 0, "Idempotent deletion mismatch");
         imported.releaseMemory(); require(imported.get(u8"测试😀").feature == raw, "Cache release changed persisted feature");
     }
-    std::cout << "Self-test passed: five real CPU models, RGBA/NV12, guided-capture cancellation, "
+    {
+        Gallery gallery(temporary.path / "confirmed-enrollment.db");
+        EnrollmentDraft draft;
+        FlowResult result; result.feature = encodeFeature(feature);
+        result.preview = {2, 2, std::vector<uint8_t>(16, 128)};
+        result.metadata.outcome = HIFACE_FLOW_OUTCOME_SPOOF_DETECTED;
+        bool rejected = false; try { draft.stage(result); } catch (const std::exception&) { rejected = true; }
+        require(rejected && !draft.pending() && gallery.count() == 0, "Rejected capture must not admit enrollment");
+        result.metadata.outcome = HIFACE_FLOW_OUTCOME_PASSED; draft.stage(result);
+        require(draft.pending() && gallery.count() == 0, "A capture must wait for explicit confirmation");
+        rejected = false; try { draft.save(gallery, " ", "", ""); } catch (const std::exception&) { rejected = true; }
+        require(rejected && draft.pending() && gallery.count() == 0, "Invalid ID must retain the draft without writing");
+        draft.save(gallery, "confirmed", "group", "tag");
+        require(!draft.pending() && gallery.count() == 1 && gallery.get("confirmed").group == "group", "Confirmation must save exactly once");
+        draft.stage(result); rejected = false;
+        try { draft.save(gallery, "confirmed", "other", ""); } catch (const SdkError& error) { rejected = error.status == HIFACE_STATUS_ALREADY_EXISTS; }
+        require(rejected && draft.pending() && gallery.get("confirmed").group == "group", "Duplicate ID must preserve both record and editable draft");
+        draft.clear(); require(!draft.pending() && gallery.count() == 1, "Cancel or leave must discard the unsaved capture");
+        rejected = false; try { draft.save(gallery, "never-captured", "", ""); } catch (const std::exception&) { rejected = true; }
+        require(rejected && gallery.count() == 1, "An empty draft must never be committed");
+        CaptureResult photo; photo.text = result.feature; photo.preview = result.preview;
+        draft.stage(photo); require(draft.pending() && gallery.count() == 1, "Photo enrollment must also wait for confirmation");
+        draft.clear();
+    }
+    std::cout << "Self-test passed: explicit enrollment confirmation/cancel/duplicate protection, five real CPU models, RGBA/NV12, guided-capture cancellation, "
         "four-action/silent liveness and verification modes, M:N settings/pause/resume, HF1, duplicate rollback, "
         "Unicode SQLite persistence, gallery CRUD/filter/page and Android JSON interchange/cancel. Synthetic pixels only.\n";
 }

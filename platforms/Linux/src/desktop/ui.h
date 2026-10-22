@@ -1,6 +1,7 @@
 #pragma once
 #include "app.h"
 #include "scene.h"
+#include "navigation.h"
 #include <functional>
 #include <map>
 namespace hiface_linux_demo {
@@ -34,11 +35,12 @@ private:
     void text(int x, int y, std::string value, uint32_t color, int max_width, Font font = Font::Body);
     void wrap(int x, int y, const std::string& value, uint32_t color, int width, int max_lines = 2, Font font = Font::Body);
     void card(Rect rect);
-    void button(Rect rect, const std::string& label, const std::string& action, int style = 0, bool enabled = true);
+    void button(Rect rect, const std::string& label, const std::string& action, int style = 0, bool enabled = true, Font font = Font::Body);
     void field(Rect rect, const std::string& key, const std::string& label, const std::string& initial = "", bool enabled = true);
     void toggle(int x, int y, int width, const std::string& key, const std::string& label, bool enabled = true);
     void picture(Rect rect, const Image* image, const CameraFrame* camera, bool mirror, const std::vector<Box>& boxes);
     void empty(Rect rect, const std::string& title, const std::string& hint);
+    void home(const ViewState& state, Rect body);
     void camera(const ViewState& state, Rect body);
     void photos(const ViewState& state, Rect body);
     void imageSearch(const ViewState& state, Rect body);
@@ -64,8 +66,10 @@ private:
     std::vector<Control> controls_;
     std::vector<Command> commands_;
     std::map<std::string, std::string> values_;
-    std::string page_ = "camera", settings_tab_ = "detection", library_tab_ = "people", selected_task_ = "D";
+    std::string page_ = "home", settings_tab_ = "detection", library_tab_ = "people", selected_task_ = "S";
     std::string focused_, keyboard_focus_, notice_, invalid_field_;
+    int home_scroll_ = 0, home_max_scroll_ = 0;
+    uint64_t enrollment_generation_ = 0;
     int selected_image_face_ = 0, image_face_offset_ = 0, image_face_rows_ = 3;
     Rect image_result_area_;
     std::vector<std::pair<Rect, int>> image_face_hits_;
@@ -73,8 +77,8 @@ private:
     int pointer_x_ = -1, pointer_y_ = -1;
     size_t cursor_ = 0;
     bool running_ = true, initialized_ = false, select_all_ = false, content_enabled_ = true;
-    bool confirming_ = false, browsing_ = false, enrolling_ = false, photo_enrollment_ = false;
-    bool settings_pending_ = false;
+    bool confirming_ = false, browsing_ = false, enrolling_ = false;
+    bool settings_pending_ = false, camera_menu_ = false;
     uint64_t settings_attempt_ = 0;
     Command pending_;
     std::string overlay_return_focus_, browser_error_;

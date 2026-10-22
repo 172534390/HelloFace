@@ -41,6 +41,7 @@ public final class FaceSearchStoreTest {
         FaceSearchStore.Request<?> request = store.save("A", "feature", "group", false,
                 result -> fail("Cancelled callback"));
         request.cancel();
+        // The worker has not advanced and the host still retains Request; release references immediately.
         // 工作线程仍未推进，宿主也继续保存 Request；引用必须现在就释放。
         assertReleased(request);
         worker.drain();
@@ -374,6 +375,7 @@ public final class FaceSearchStoreTest {
                 merged.get(0).id, merged.get(1).id, merged.get(2).id));
         assertEquals("VIP", merged.get(0).group);
         assertEquals("new", merged.get(0).tag);
+        // The original snapshot must remain unchanged while AsyncListDiffer compares lists.
         // AsyncListDiffer 计算新旧列表期间，原快照必须保持不变。
         assertEquals("1A", current.get(0).group);
         assertEquals("old", current.get(0).tag);
@@ -615,7 +617,11 @@ public final class FaceSearchStoreTest {
         }
     }
 
-    /** 分别推进数据库队列和主线程队列，以重现真实生命周期的交错。 */
+    /**
+     * Advance the database and main-thread queues separately to reproduce real lifecycle interleaving.
+     *
+     * 分别推进数据库队列和主线程队列，以重现真实生命周期的交错。
+     */
     private static final class QueuedExecutor extends AbstractExecutorService {
         private final Queue<Runnable> queue = new ArrayDeque<>();
         private boolean shutdown;

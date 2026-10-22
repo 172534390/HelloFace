@@ -7,7 +7,12 @@ const STANDARD_HEIGHT: number = 480;
 const HIGH_WIDTH: number = 1280;
 const HIGH_HEIGHT: number = 720;
 
-/** 双路使用相同规格；最多尝试首选、标准附近和最小规格，限制重启成本。 */
+/**
+ * Use the same profile for both outputs and bound restart cost to preferred, near-standard, and
+ * minimum-size attempts.
+ *
+ * 双路使用相同规格；最多尝试首选、标准附近和最小规格，限制重启成本。
+ */
 export class CameraProfileSelector {
   static select(profiles: Array<camera.Profile>, highResolution: boolean): camera.Profile[] {
     const targetWidth: number = highResolution ? HIGH_WIDTH : STANDARD_WIDTH;

@@ -28,7 +28,11 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.hiface.sdk.common.HiFaceError;
 import com.hiface.sdk.demo.R;
 
-/** 搜索页面共用的主题、表单控件和错误文案。 */
+/**
+ * Shared search-screen theme, form controls, and error text.
+ *
+ * 搜索页面共用的主题、表单控件和错误文案。
+ */
 final class SearchUi {
     private SearchUi() {}
 
@@ -36,7 +40,11 @@ final class SearchUi {
         return Math.round(value * context.getResources().getDisplayMetrics().density);
     }
 
-    /** 为搜索相关弹窗和表单使用统一主题，不改变宿主 Activity 的主题。 */
+    /**
+     * Use one theme for search dialogs and forms without changing the host Activity's theme.
+     *
+     * 为搜索相关弹窗和表单使用统一主题，不改变宿主 Activity 的主题。
+     */
     static Context theme(Context context) {
         return new ContextThemeWrapper(context, R.style.Theme_HiFace_Search);
     }
@@ -60,7 +68,11 @@ final class SearchUi {
         showFormDialog(dialog, scroll, 12);
     }
 
-    /** 键盘弹出后只收缩表单，标题和操作按钮保留。 */
+    /**
+     * Resize only the form when the keyboard opens, retaining the title and action buttons.
+     *
+     * 键盘弹出后只收缩表单，标题和操作按钮保留。
+     */
     static void showFormDialog(AlertDialog dialog, FormScrollView scroll, int horizontalMarginDp) {
         dialog.show();
         Window window = dialog.getWindow();
@@ -142,10 +154,16 @@ final class SearchUi {
         }
     }
 
-    /** 创建可滚动弹窗的纵向表单容器，初始焦点留在容器而非输入框。 */
+    /**
+     * Create a scrollable vertical form container; initial focus stays on the container rather than an
+     * input field.
+     *
+     * 创建可滚动弹窗的纵向表单容器，初始焦点留在容器而非输入框。
+     */
     static LinearLayout form(Context context) {
         LinearLayout form = new LinearLayout(context);
         form.setOrientation(LinearLayout.VERTICAL);
+        // Open long forms at their heading instead of automatically scrolling to the first input.
         // 打开长表单时停在标题处，避免自动滚到第一个输入框。
         form.setFocusableInTouchMode(true);
         form.setPadding(dp(context, 16), dp(context, 4), dp(context, 16), dp(context, 12));
@@ -173,7 +191,11 @@ final class SearchUi {
         form.addView(view, params);
     }
 
-    /** 创建带标签、可选帮助文本和独立 View ID 的单行输入框，并加入表单。 */
+    /**
+     * Create and attach a labeled single-line input with optional help text and a unique View ID.
+     *
+     * 创建带标签、可选帮助文本和独立 View ID 的单行输入框，并加入表单。
+     */
     static Input field(LinearLayout form, @StringRes int label, String value,
             @StringRes int helper, int type) {
         Context context = form.getContext();
@@ -218,7 +240,12 @@ final class SearchUi {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
-    /** 只重试可暂时失败的有效会话；BUSY/CLOSED 启动拒绝不能通过原会话 resume 恢复。 */
+    /**
+     * Retry only a valid session with a transient failure; BUSY/CLOSED startup rejection cannot recover by
+     * resuming that session.
+     *
+     * 只重试可暂时失败的有效会话；BUSY/CLOSED 启动拒绝不能通过原会话 resume 恢复。
+     */
     static boolean canResumeSearch(HiFaceError error) {
         switch (error.getCode()) {
             case NOT_READY:
@@ -230,7 +257,11 @@ final class SearchUi {
         }
     }
 
-    /** 将技术错误码映射到搜索页面文案，未单独处理的错误使用通用提示。 */
+    /**
+     * Map technical error codes to search-screen text, with a generic message for unhandled errors.
+     *
+     * 将技术错误码映射到搜索页面文案，未单独处理的错误使用通用提示。
+     */
     @StringRes
     static int errorText(HiFaceError error) {
         switch (error.getCode()) {
@@ -256,20 +287,34 @@ final class SearchUi {
             this.edit = edit;
         }
 
-        /** 读取并去除两端空白，统一表单空输入的处理方式。 */
+        /**
+         * Read and trim input to handle empty form values consistently.
+         *
+         * 读取并去除两端空白，统一表单空输入的处理方式。
+         */
         String value() {
             return edit.getText() == null ? "" : edit.getText().toString().trim();
         }
 
-        /** 回填草稿值时清除上一次校验错误。 */
+        /**
+         * Clear the previous validation error when populating draft values.
+         *
+         * 回填草稿值时清除上一次校验错误。
+         */
         void set(String value) {
             edit.setText(value);
             box.setError(null);
         }
 
-        /** 显示字段错误并定位焦点，返回 false 便于串联表单校验。 */
+        /**
+         * Show a field error and focus it; return false to allow chained form validation.
+         *
+         * 显示字段错误并定位焦点，返回 false 便于串联表单校验。
+         */
         boolean error(@StringRes int label) {
             box.setError(box.getContext().getString(label));
+            // Advanced fields may be hidden; wait for the caller to expand and lay out the section before
+            // focusing.
             // 高级字段可能仍隐藏，等调用方展开并布局后再定位。
             edit.post(() -> {
                 edit.requestFocus();
@@ -278,7 +323,12 @@ final class SearchUi {
             return false;
         }
 
-        /** 校验闭区间内的整数，空输入、溢出和越界都定位到当前字段。 */
+        /**
+         * Validate an integer within an inclusive range; focus the field for empty input, overflow, or out-of-
+         * range values.
+         *
+         * 校验闭区间内的整数，空输入、溢出和越界都定位到当前字段。
+         */
         boolean integerIn(int min, int max, @StringRes int error) {
             try {
                 int value = Integer.parseInt(value());
@@ -287,6 +337,7 @@ final class SearchUi {
                     return true;
                 }
             } catch (NumberFormatException ignored) {
+                // Empty input and integer overflow also produce field errors.
                 // 空输入或超出整数范围同样显示字段错误。
             }
             return error(error);

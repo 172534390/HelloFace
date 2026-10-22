@@ -1,5 +1,6 @@
 #pragma once
 #include "camera.h"
+#include "navigation.h"
 #include "data_exchange.h"
 #include "demo_service.h"
 #include <windows.h>
@@ -11,9 +12,8 @@
 
 namespace hiface_demo {
 constexpr UINT kFrameReady = WM_APP + 1;
-enum class Page { Detection, Reference, Verification, Liveness, Search, ImageSearch, Comparison, Gallery };
 struct Settings {
-    Page page = Page::Search;
+    Page page = Page::Home;
     SearchOptions search;
     FlowOptions flow;
     unsigned detection_max = 3, camera_index = 0, width = 640, height = 480;
@@ -26,21 +26,21 @@ struct Snapshot {
     Settings settings;
     std::shared_ptr<const Image> preview, image_a, image_b, aligned_a, aligned_b, captured;
     Update update;
-    std::shared_ptr<const Image> search_photo; // BGRA for the native view
+    std::shared_ptr<const Image> search_photo; // BGRA for the native view / 供原生视图显示的 BGRA。
     std::filesystem::path search_file;
     std::shared_ptr<const ImageSearchResult> image_search;
     std::vector<Person> people;
     uint64_t total = 0, filtered = 0;
     uint32_t offset = 0;
     uint64_t completed_command = 0, search_generation = 0;
-    bool error = false;
+    bool error = false, pending_enrollment = false;
     bool camera_open = false, busy = false, flow_active = false, paused = false, has_reference = false, fatal = false;
     double capture_fps = 0, analysis_fps = 0, inference_ms = 0;
 };
-enum class Action { Apply, OpenCamera, CloseCamera, StartFlow, Enroll, Cancel, Pause,
+enum class Action { Apply, OpenCamera, CloseCamera, StartFlow, Cancel, Pause,
     LoadA, LoadB, Compare, SetImageReference, SetGalleryReference, ImportReference,
     ExportFeature, ExportPreview, ImageEnroll, RefreshGallery, PreviousPage, NextPage,
-    DeletePerson, UpdatePerson, ImportJson, ExportJson, ImportImages, SearchPhoto, SearchPhotoAgain, ReleaseMemory };
+    DeletePerson, UpdatePerson, ImportJson, ExportJson, ImportImages, SearchPhoto, SearchPhotoAgain, ReleaseMemory, SaveEnrollment };
 struct Command {
     Action action = Action::Apply;
     Settings settings;
@@ -51,7 +51,7 @@ class App {
 public:
     HWND window = nullptr;
     std::filesystem::path database;
-    std::vector<CameraDevice> cameras; // UI thread only
+    std::vector<CameraDevice> cameras; // UI thread only / 仅限 UI 线程。
     std::atomic<uint64_t> generation{0};
     std::atomic<bool> notification_pending{false};
     ~App();

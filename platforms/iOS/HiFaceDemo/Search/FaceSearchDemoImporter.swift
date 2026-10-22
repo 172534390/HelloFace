@@ -26,6 +26,9 @@ struct FaceSearchDemoImportProgress: Sendable {
     let failed: Int
 }
 
+/// Bulk importer for Demo Resources, outside the SDK. Write features in batches of 1,000 and use
+/// bounded image prefetch with serialized extraction. Replace demonstration URLs with authorized face-
+/// test images and use a CDN for business integration.
 /// Demo Resources 专用批量导入器；数据不属于 SDK。特征按 1000 条写库，图片有界预下载、串行提取。
 /// images_1000.json 仅供演示；业务接入时替换为已获授权的人脸测试图片 URL，并使用 CDN 加速。
 enum FaceSearchDemoImporter {
@@ -110,6 +113,8 @@ enum FaceSearchDemoImporter {
             while let downloaded = try await downloads.next() {
                 try Task.checkCancellation()
                 if control.isStopped { downloads.cancelAll(); break }
+                // Consume in completion order and replenish before decoding, preventing a slow request from blocking
+                // later images.
                 // 按完成顺序消费，并在解码前补位，避免慢请求阻塞后续图片。
                 if nextToStart < manifest.entries.count {
                     let value = manifest.entries[nextToStart]
@@ -121,6 +126,8 @@ enum FaceSearchDemoImporter {
                 guard let data = downloaded.data else {
                     failed += 1
                     processed += 1
+                    // Update after each image; report the final image only after its batch is saved to avoid duplicate
+                    // terminal progress.
                     // 每张结束立即更新；最后一张在尾批写库完成后报告，避免重复终值。
                     if processed < imageCount { await progress(FaceSearchDemoImportProgress(
                         processed: processed, total: imageCount, imported: imported, failed: failed)) }

@@ -1,6 +1,10 @@
 import { FaceFlowListener, FaceFlowProgress, FaceFlowResult, HiFaceError } from 'hiface';
 
-/** 将 SDK 流程监听器适配为页面闭包；仅属于 Demo 展示层。 */
+/**
+ * Adapt SDK flow listeners to screen closures in the Demo presentation layer only.
+ *
+ * 将 SDK 流程监听器适配为页面闭包；仅属于 Demo 展示层。
+ */
 export class DemoFlowListener implements FaceFlowListener {
   private readonly progressHandler: (progress: FaceFlowProgress) => void;
   private readonly resultHandler: (result: FaceFlowResult) => void;

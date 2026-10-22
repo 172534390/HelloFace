@@ -1,25 +1,69 @@
-# HiFace Android · 0.0.3 Beta
+# HiFace Android Integration Demo
 
 English | [简体中文](README.zh-CN.md)
 
-Android 6.0+, ARM64/ARMv7. Build with JDK 17 and Android SDK 36 / Build Tools 36.0.0; no NDK required.
+SDK / Demo: **0.0.4 Beta**.
 
-## Run
+On-device detection, capture, liveness, 1:1 comparison, 1:N/M:N search and face-library management.
 
-Open this directory in Android Studio and run `demo`, or build:
+**Model scope: The current model does not support face recognition for people under 12 and must not be used in financial scenarios.**
+
+Guides: [SDK](docs/SDK.md) · [Demo](docs/DEMO.md).
+
+## Build and run
+
+Use Android Studio, JDK 17, Android SDK 36 / Build Tools 36.0.0, and Java source level 11. Minimum Android version is 6.0 / API 23. The AAR includes native libraries for `arm64-v8a` and `armeabi-v7a`; this Demo does not require an NDK installation. Camera validation requires an ARM phone.
+
+Open this directory, sync dependencies, select `demo`, and run it on a phone. Grant camera access when requested. Application ID: `com.hiface.sdk.public`.
 
 ```sh
 ./gradlew :demo:assembleDebug
 ```
 
-APK: `demo/build/outputs/apk/debug/`. Use your own certificate for Release builds.
+APK output: `demo/build/outputs/apk/debug/`.
 
-## Integrate
+## Integrating in your App
 
-Copy `maven-repository/` into your project. Follow the [SDK guide](docs/SDK.md) for dependencies, `noCompress` and camera permissions.
+If this export contains `maven-repository/`, copy it into your project and add:
 
-Examples: [camera](demo/src/main/java/com/hiface/sdk/demo/camera/CameraPreviewFragment.java) · [search](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchActivity.java) · [face library](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchLibraryActivity.java).
-Demo data is in `demo/src/main/assets/face_search/`; image downloads require internet. The 1:1 reference uses MMKV: replace the demo key. HF1 and the SDK face database are unencrypted.
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        maven {
+            url = uri("maven-repository")
+            content { includeModule("io.github.facesdkpro", "hiface-android") }
+        }
+        mavenCentral()
+    }
+}
+```
 
-The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
-Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
+Use the SDK dependency and model compression configuration in the host App module:
+
+```kotlin
+dependencies {
+    implementation("io.github.facesdkpro:hiface-android:0.0.4")
+}
+android {
+    defaultConfig {
+        minSdk = 23
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    androidResources { noCompress += "bphfm" }
+}
+```
+
+Retain the AAR consumer R8 rules. Request `CAMERA` at runtime; online image import needs `INTERNET`.
+
+Camera example: [CameraPreviewFragment](demo/src/main/java/com/hiface/sdk/demo/camera/CameraPreviewFragment.java). See the SDK guide for frame ownership and lifecycle.
+
+## Signing and expiry
+
+Sign Release APKs with your certificate. Retain [LICENSE](LICENSE).
+
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/) · [Issues](https://github.com/FaceSDKPro/HelloFace/issues).

@@ -2,10 +2,9 @@
 
 English | [简体中文](README.zh-CN.md)
 
-**0.0.3 Beta** · x86_64 / ARM64 · CPU · C ABI v1.
+**Beta** · x86_64 / ARM64 · CPU · C ABI v1.
 Ubuntu 22.04 / glibc 2.35 baseline; Ubuntu 24.04 is a compatibility target.
 The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios. Target-device acceptance is pending.
-Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
 
 ## Integrate
 
@@ -24,16 +23,16 @@ Configure with `-DCMAKE_PREFIX_PATH=/absolute/path/to/sdk`. Deploy `libhiface.so
 
 ## Run the C example
 
-Download the [Demo example](https://github.com/FaceSDKPro/HelloFace/tree/main/platforms/Linux/examples/image-search). From this SDK directory, with CMake 3.22.1+ and a C compiler:
+From the SDK directory, with CMake 3.22.1+ and a C compiler:
 
 ```bash
 sha256sum -c FILES.sha256
-cmake -S /path/to/HelloFace/platforms/Linux/examples/image-search -B build -DCMAKE_PREFIX_PATH="$PWD"
+cmake -S ../../../examples/image-search -B build -DCMAKE_PREFIX_PATH="$PWD"
 cmake --build build --parallel 2
 ./build/hiface_sdk_image_search --builtin :memory: --blank 256 256
 ```
 
-[image_search.c](https://github.com/FaceSDKPro/HelloFace/blob/main/platforms/Linux/examples/image-search/image_search.c) initializes the SDK, captures up to ten faces, queries the database and releases resources.
+[image_search.c](../../../examples/image-search/image_search.c) initializes the SDK, captures up to ten faces, queries the database and releases resources.
 Replace `:memory: --blank 256 256` with `/path/to/faces.db image.rgba WIDTH HEIGHT` to search your own pixels.
 Input must be orientation-normalized, tightly packed RGBA8888: even dimensions 2..4096, exactly `WIDTH*HEIGHT*4` bytes.
 JPEG/PNG decoding and camera adapters are demonstrated in the separate Demo.
@@ -53,3 +52,13 @@ JPEG/PNG decoding and camera adapters are demonstrated in the separate Demo.
 
 Full signatures and contracts: `include/hiface/hiface_c_api.h`.
 Keep the license and dependency notices. For usage/redistribution authorization or support, [contact the author](https://github.com/FaceSDKPro/HelloFace/issues).
+
+IR-only FLIR: create a CPU session with feature/landmarks disabled, call
+`hiface_linux_load_infrared_model_v1(session, NULL)`, then
+`hiface_session_evaluate_infrared_liveness_v1`. Supply upright unmirrored GRAY8 IR
+pixels, row stride, an IR-coordinate face box (x/y + width/height, at least 10x10)
+and a device-calibrated real threshold. `real_score >= real_threshold` passes;
+check status before reading the result. Dimensions may be odd, up to 4096 per side.
+See `examples/infrared_liveness.c` for a complete consumer. This does not capture
+IR cameras, detect a face, or change the RGB liveness/search flows. FLIR's MIT
+notice is included in LICENSE. Validate actual IR hardware and attacks separately.

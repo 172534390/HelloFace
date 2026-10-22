@@ -3,7 +3,11 @@ import { DemoTheme } from './DemoTheme';
 const STATUS_TEXT_SIZE_VP: number = 19;
 const STATUS_TEXT_GAP_VP: number = 12;
 const STATUS_TEXT_HORIZONTAL_MARGIN_VP: number = 24;
-/** 与 Android FaceCaptureOverlayView 一致的圆孔、引导和倒计时。 */
+/**
+ * Circular opening, guidance, and countdown matching Android FaceCaptureOverlayView.
+ *
+ * 与 Android FaceCaptureOverlayView 一致的圆孔、引导和倒计时。
+ */
 export class FaceCaptureOverlay {
   static draw(context: CanvasRenderingContext2D, width: number, height: number,
     guide: string, countdownRemaining: number): void {
@@ -31,6 +35,8 @@ export class FaceCaptureOverlay {
     context.arc(centerX, centerY, radius - 3, -Math.PI / 2,
       -Math.PI / 2 + Math.PI * 2 * countdownRemaining);
     context.stroke();
+    // Android uses 19 sp; Canvas px are physical pixels and look too small on dense screens. Use vp on
+    // HarmonyOS to match Android logical size.
     // Android 使用 19sp。Canvas 的 px 是物理像素，在高密度设备上会显得明显偏小；
     // 鸿蒙使用 vp 保持与 Android 逻辑尺寸一致。
     context.font = `bold ${STATUS_TEXT_SIZE_VP}vp sans-serif`;

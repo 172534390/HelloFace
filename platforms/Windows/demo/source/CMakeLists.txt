@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.22.1)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     project(HiFaceWindowsDemo LANGUAGES C CXX RC)
-    find_package(HiFace 0.0.3 CONFIG REQUIRED COMPONENTS C)
+    # Consume the installed public C ABI; release packaging independently pins
+    # 接入已安装的公开 C ABI，发布打包流程单独固定 SDK 二进制清单。
+    # the reviewed SDK binary catalog instead of a private development tag.
+    # 固定的是已审查 SDK 二进制，而不是私有开发标签。
+    find_package(HiFace CONFIG REQUIRED COMPONENTS C)
     # Demo-owned integration sample. The SDK itself ships no implementation sources.
+    # 由 Demo 持有的接入示例；SDK 本身不交付实现源码。
     set(HIFACE_CPP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/integration/include")
     add_subdirectory(integration)
 endif()
@@ -18,11 +23,12 @@ endif()
 target_link_libraries(hiface_windows_demo_support PUBLIC HiFace::Cpp ole32 windowscodecs shell32 uuid comdlg32)
 target_include_directories(hiface_windows_demo_support PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 enable_language(RC)
-add_executable(hiface_demo WIN32 main.cpp app.cpp camera.cpp theme.cpp image_search_view.cpp)
+add_executable(hiface_demo WIN32 main.cpp app.cpp camera.cpp camera_preferences.cpp theme.cpp image_search_view.cpp)
 if(MSVC)
     target_sources(hiface_demo PRIVATE app.manifest)
 else()
     target_sources(hiface_demo PRIVATE app.rc)
+    set_property(SOURCE app.rc APPEND PROPERTY OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/app.manifest")
 endif()
 target_link_libraries(hiface_demo PRIVATE hiface_windows_demo_support
     mfplat mfreadwrite mfuuid mf user32 gdi32 shell32 comctl32 uxtheme uuid)
@@ -42,7 +48,9 @@ endforeach()
 if(HiFace_RUNTIME_DIR)
     file(GLOB hiface_runtime_dlls "${HiFace_RUNTIME_DIR}/*.dll")
     # Both consumers share one output directory. One asset target avoids two
+    # 两个接入程序共用输出目录；使用同一资源目标，避免两个复制进程并发执行。
     # parallel copy processes racing over the same DLL on Windows.
+    # 避免 Windows 上并行复制同一个 DLL 产生竞争。
     set(hiface_example_bin "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
     add_custom_target(hiface_windows_example_assets
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${hiface_example_bin}"

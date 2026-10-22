@@ -15,7 +15,11 @@ import com.hiface.sdk.demo.camera.CameraPreviewFragment;
 import com.hiface.sdk.detection.FaceDetectionConfig;
 import com.hiface.sdk.detection.FaceDetectionResult;
 
-/** 实时展示人脸框、五点、局部轮廓和头姿角度。 */
+/**
+ * Display face boxes, five landmarks, selected contours, and head-pose angles in real time.
+ *
+ * 实时展示人脸框、五点、局部轮廓和头姿角度。
+ */
 public final class FaceDetectionActivity extends CameraBrightnessActivity {
     private CameraPreviewFragment cameraPreview;
     private FaceDetectionOverlayView detectionOverlay;
@@ -38,14 +42,15 @@ public final class FaceDetectionActivity extends CameraBrightnessActivity {
         findViewById(R.id.backButton).setOnClickListener(view -> finish());
         findViewById(R.id.switchCameraButton).setOnClickListener(view -> switchCamera());
         HiFaceSdk sdk = HiFaceSdk.builder(this)
-                .lifecycleOwner(this) //自动管理生命周期，关闭资源
+                .lifecycleOwner(this) //自动管理生命周期，关闭资源 / Manage the lifecycle automatically and close resources.
                 .build();
 
         FaceDetectionConfig detectionConfig = FaceDetectionConfig.builder()
-                .maxFaces(10) // 本页面需要展示多人；上限越高，低配设备开销越大
-                .detailedLandmarks(true) // 本页面需要展示 468 点轮廓与头姿
+                .maxFaces(10) // 本页面需要展示多人；上限越高，低配设备开销越大 / This screen displays multiple faces; higher limits cost more on low-end devices.
+                .detailedLandmarks(true) // 本页面需要展示 468 点轮廓与头姿 / This screen displays the 468-point contours and head pose.
                 .build();
 
+        // Analyze a camera frame.
         //分析相机帧
         cameraPreview.setFrameListener(frame -> {
             HiFaceResult<FaceDetectionResult> result = sdk.processFrame(frame, detectionConfig);
@@ -60,6 +65,10 @@ public final class FaceDetectionActivity extends CameraBrightnessActivity {
 
 
     /**
+     * Retain only the latest undrawn result on the main thread and render on the next vsync to avoid
+     * Runnable buildup. FaceDetectionResult is immutable; camera YUV buffers never escape the analysis
+     * callback.
+     *
      * 主线程只保留尚未绘制的最新结果，并按下一次 vsync 更新，避免推理快于绘制时积压 Runnable。
      * {@link FaceDetectionResult} 是不可变快照；相机的 YUV Buffer 不会跨出分析回调。
      */
@@ -69,6 +78,8 @@ public final class FaceDetectionActivity extends CameraBrightnessActivity {
             pendingOverlayFrame = frameResult;
             if (!overlayUpdatePosted) {
                 overlayUpdatePosted = true;
+                // Posting and cancellation share a lock so no old Activity refresh can be posted after onStop clears
+                // the queue.
                 // 投递和取消共用锁，不能在 onStop 清空后才补投旧 Activity 的刷新。
                 detectionOverlay.postOnAnimation(overlayUpdater);
             }

@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Select a reference Face ID, then perform actions, passive liveness, and 1:1 comparison.
 /// 先选择参考 Face ID，再完成动作、静默活体和 1:1 比对。
 struct FaceVerificationView: View {
     @ObservedObject var model: CameraDemoModel

@@ -1,6 +1,8 @@
 import Foundation
 import HiFace
 
+/// Counterpart of Android FaceFlowUi: shared stage, action, and outcome text for capture, liveness, and
+/// dynamic 1:1.
 /// 对应 Android `FaceFlowUi`：统一采集、活体和动态 1:1 的阶段、动作及终态文案。
 enum FaceFlowPresentation {
     static func text(for progress: FaceFlowProgress) -> String {
@@ -41,6 +43,8 @@ enum FaceFlowPresentation {
         }
     }
 
+    /// Generate distinct actions each Demo round; production applications may replace this with server-
+    /// issued challenges.
     /// Demo 每轮生成互不重复的动作；生产业务可以替换为服务端挑战策略。
     static func randomChallenge(count: Int) -> [FaceAction] {
         Array(FaceAction.allCases.shuffled().prefix(count))

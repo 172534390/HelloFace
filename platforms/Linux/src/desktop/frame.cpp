@@ -24,6 +24,47 @@ void preview(CameraFrame& frame) {
         frame.rgba[offset * 4 + 3] = 255;
     }
 }
+void rotatePlane90(const uint8_t* source, int source_width, int source_height,
+                   uint8_t* destination, bool clockwise) {
+    for (int source_y = 0; source_y < source_height; ++source_y)
+        for (int source_x = 0; source_x < source_width; ++source_x) {
+            const int destination_x = clockwise ? source_height - 1 - source_y : source_y;
+            const int destination_y = clockwise ? source_x : source_width - 1 - source_x;
+            destination[static_cast<size_t>(destination_y) * source_height + destination_x] =
+                source[static_cast<size_t>(source_y) * source_width + source_x];
+        }
+}
+void rotateRgba90(const uint8_t* source, int source_width, int source_height,
+                  uint8_t* destination, bool clockwise) {
+    for (int source_y = 0; source_y < source_height; ++source_y)
+        for (int source_x = 0; source_x < source_width; ++source_x) {
+            const int destination_x = clockwise ? source_height - 1 - source_y : source_y;
+            const int destination_y = clockwise ? source_x : source_width - 1 - source_x;
+            std::memcpy(destination + (static_cast<size_t>(destination_y) * source_height + destination_x) * 4,
+                source + (static_cast<size_t>(source_y) * source_width + source_x) * 4, 4);
+        }
+}
+void rotateFrame90(CameraFrame& frame, bool clockwise) {
+    require(frame.width >= 2 && frame.height >= 2 && !(frame.width & 1) && !(frame.height & 1),
+        "Camera rotation requires even dimensions");
+    const int source_width = frame.width, source_height = frame.height;
+    const size_t count = static_cast<size_t>(source_width) * source_height;
+    require(frame.i420.size() == count * 3 / 2, "Invalid I420 frame for camera rotation");
+    require(frame.rgba.empty() || frame.rgba.size() == count * 4, "Invalid RGBA preview for camera rotation");
+    const auto i420_source = std::move(frame.i420);
+    const auto rgba_source = std::move(frame.rgba);
+    frame.i420.resize(i420_source.size());
+    if (!rgba_source.empty()) frame.rgba.resize(rgba_source.size());
+    rotatePlane90(i420_source.data(), source_width, source_height, frame.i420.data(), clockwise);
+    rotatePlane90(i420_source.data() + count, source_width / 2, source_height / 2,
+        frame.i420.data() + count, clockwise);
+    rotatePlane90(i420_source.data() + count * 5 / 4, source_width / 2, source_height / 2,
+        frame.i420.data() + count * 5 / 4, clockwise);
+    if (!rgba_source.empty())
+        rotateRgba90(rgba_source.data(), source_width, source_height, frame.rgba.data(), clockwise);
+    frame.width = source_height;
+    frame.height = source_width;
+}
 }
 HiFaceYuv420FrameV1 CameraFrame::view() const {
     const size_t count = static_cast<size_t>(width) * height;
@@ -36,11 +77,12 @@ HiFaceYuv420FrameV1 CameraFrame::view() const {
     return frame;
 }
 void yuyvFrame(const uint8_t* bytes, size_t size, int width, int height, int stride,
-              HiFaceYuvRangeV1 range, HiFaceYuvMatrixV1 matrix, CameraFrame& frame) {
+              HiFaceYuvRangeV1 range, HiFaceYuvMatrixV1 matrix, CameraFrame& frame, bool make_preview) {
     require(bytes && width >= 2 && height >= 2 && !(width & 1) && !(height & 1)
         && width <= 1920 && height <= 1080 && stride >= width * 2
         && size >= static_cast<size_t>(stride) * (height - 1) + width * 2, "Invalid YUYV frame");
     frame.width = width; frame.height = height; frame.range = range; frame.matrix = matrix;
+    frame.x11_bgrx = false;
     const size_t count = static_cast<size_t>(width) * height;
     frame.i420.resize(count * 3 / 2);
     for (int y = 0; y < height; ++y) for (int x = 0; x < width; x += 2) {
@@ -53,13 +95,35 @@ void yuyvFrame(const uint8_t* bytes, size_t size, int width, int height, int str
             frame.i420[count * 5 / 4 + uv] = (unsigned(input[3]) + input[stride + 3] + 1) / 2;
         }
     }
-    preview(frame);
+    if (make_preview) preview(frame); else frame.rgba.clear();
+}
+void nv12Frame(const uint8_t* bytes, size_t size, int width, int height, int stride, bool nv21,
+              HiFaceYuvRangeV1 range, HiFaceYuvMatrixV1 matrix, CameraFrame& frame, bool make_preview) {
+    const size_t y_bytes = static_cast<size_t>(stride) * height;
+    const size_t required = y_bytes + static_cast<size_t>(stride) * (height / 2 - 1) + width;
+    require(bytes && width >= 2 && height >= 2 && !(width & 1) && !(height & 1)
+        && width <= 1920 && height <= 1080 && stride >= width && size >= required, "Invalid NV12/NV21 frame");
+    frame.width = width; frame.height = height; frame.range = range; frame.matrix = matrix;
+    frame.x11_bgrx = false;
+    const size_t count = static_cast<size_t>(width) * height;
+    frame.i420.resize(count * 3 / 2);
+    for (int y = 0; y < height; ++y)
+        std::memcpy(frame.i420.data() + static_cast<size_t>(y) * width,
+            bytes + static_cast<size_t>(y) * stride, width);
+    const auto* chroma = bytes + y_bytes;
+    for (int y = 0; y < height / 2; ++y) for (int x = 0; x < width; x += 2) {
+        const auto* pair = chroma + static_cast<size_t>(y) * stride + x;
+        const size_t index = static_cast<size_t>(y) * (width / 2) + x / 2;
+        frame.i420[count + index] = pair[nv21 ? 1 : 0];
+        frame.i420[count * 5 / 4 + index] = pair[nv21 ? 0 : 1];
+    }
+    if (make_preview) preview(frame); else frame.rgba.clear();
 }
 void rgbaFrame(const Image& image, CameraFrame& frame) {
     const int width = image.width, height = image.height;
     require(width >= 2 && height >= 2 && width <= 1920 && height <= 1080 && !(width & 1) && !(height & 1)
         && image.rgba.size() == static_cast<size_t>(width) * height * 4, "Unsupported camera image size");
-    frame.width = width; frame.height = height;
+    frame.width = width; frame.height = height; frame.x11_bgrx = false;
     frame.range = HIFACE_YUV_RANGE_FULL; frame.matrix = HIFACE_YUV_MATRIX_BT601;
     frame.rgba = image.rgba;
     const size_t count = static_cast<size_t>(width) * height;
@@ -78,5 +142,11 @@ void rgbaFrame(const Image& image, CameraFrame& frame) {
         frame.i420[count + index] = clip(us / 4);
         frame.i420[count * 5 / 4 + index] = clip(vs / 4);
     }
+}
+void rotateFrameCounterClockwise(CameraFrame& frame) {
+    rotateFrame90(frame, false);
+}
+void rotateFrameClockwise(CameraFrame& frame) {
+    rotateFrame90(frame, true);
 }
 }

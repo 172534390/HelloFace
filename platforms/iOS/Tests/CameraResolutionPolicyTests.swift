@@ -1,5 +1,6 @@
 import Foundation
 
+/// Device-independent format-selection regressions; compile alongside CameraResolutionPolicy.swift.
 /// 不依赖真机的格式选择回归测试。编译时同时传入 CameraResolutionPolicy.swift。
 @main
 struct CameraResolutionPolicyTests {
@@ -26,6 +27,7 @@ struct CameraResolutionPolicyTests {
         precondition(select([option(1280, 720, fov: 50), option(1280, 720, fov: 65)], .medium) == 1)
         precondition(select([option(1280, 720), option(1280, 720)], .medium) == 0)
 
+        // Fixed-30-FPS Mac cameras must work on ordinary screens and with 15/5 FPS search analysis.
         // Mac 固定 30 FPS 摄像头能用于普通页面，也必须能用于 15/5 FPS 搜索分析。
         func captureOption(_ width: Int, _ height: Int, minimum: Double, maximum: Double) -> CameraFormatOption {
             CameraFormatOption(
@@ -72,6 +74,7 @@ struct CameraResolutionPolicyTests {
         precondition(searchSelect([fixed30, activeOnly, variable]) == 2)
         precondition(searchSelect([fixed30, activeOnly]) == 1)
         precondition(searchSelect([activeOnly]) == 0)
+        // Frame-rate fallback must not relax SDK dimension or even-sized NV12 requirements.
         // 帧率回退不能放宽 SDK 的尺寸或 NV12 偶数尺寸约束。
         precondition(searchSelect([captureOption(3840, 2160, minimum: 5, maximum: 30), fixed30]) == 1)
         precondition(searchSelect([captureOption(3840, 2160, minimum: 30, maximum: 30)]) == nil)
@@ -85,12 +88,16 @@ struct CameraResolutionPolicyTests {
         for tier in CameraAnalysisResolution.allCases {
             precondition(CameraAnalysisResolution(storedValue: tier.rawValue) == tier)
         }
+        // Ordinary wide cameras require at least 1.0x; a virtual camera with system display factor 0.5 can
+        // represent 0.8x exactly.
         // 普通广角镜头最低只能 1.0x；系统提供 0.5 显示倍率的虚拟镜头可准确得到 0.8x。
         precondition(CameraZoomPolicy.deviceFactor(displayMultiplier: 1, minimum: 1, maximum: 8) == 1)
         precondition(CameraZoomPolicy.deviceFactor(displayMultiplier: 0.5, minimum: 1, maximum: 8) == 1.6)
         precondition(CameraZoomPolicy.displayFactor(deviceFactor: 1.6, displayMultiplier: 0.5) == 0.8)
         precondition(CameraZoomPolicy.deviceFactor(displayMultiplier: 0.5, minimum: 2, maximum: 8) == 2)
 
+        // Arbitrary formats, orientations, and SDK limits must never select out-of-bounds or odd-sized
+        // dimensions.
         // 不同镜头的任意格式组合、横竖方向和 SDK 上限下均不得选到越界或奇数尺寸。
         let inventory = typical + [option(720, 1280), option(960, 540), option(1440, 1440), option(641, 480)]
         var combinations = 0

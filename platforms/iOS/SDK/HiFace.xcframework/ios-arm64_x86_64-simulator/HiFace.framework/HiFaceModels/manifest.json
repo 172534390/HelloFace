@@ -1,7 +1,6 @@
 {
   "format": "BPHFM1",
   "payload_format": "HFM2",
-  "chunk_size": 262144,
   "models": [
     {
       "model_id": "check",
@@ -41,6 +40,14 @@
         "file": "m_tnelis.bphfm",
         "bytes": 884478,
         "sha256": "33bc25702d61f15c92005a055a5a2fdaf3117b40575f3651ba1f51705d08b0cc"
+      }
+    },
+    {
+      "model_id": "infrared",
+      "bundle": {
+        "file": "derarfni.bphfm",
+        "bytes": 1327340,
+        "sha256": "f176797cf892d75e472c813eca63f70a54dbfffdb9046880705a265da3637a8d"
       }
     }
   ]

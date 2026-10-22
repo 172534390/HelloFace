@@ -35,6 +35,7 @@ Image convert(stbi_uc* pixels, int width, int height) {
     require(width >= 2 && height >= 2 && width <= 4096 && height <= 4096, "Image size must be 2..4096");
     // Match Android static-image adaptation: crop only the final odd row/column,
     // without resizing or introducing additional edge pixels.
+    // 与 Android 静态图片适配一致：仅裁掉末尾奇数行或列，不缩放、不补充边缘像素。
     Image image{width & ~1, height & ~1, {}};
     image.rgba.resize(static_cast<size_t>(image.width) * image.height * 4);
     for (int y = 0; y < image.height; ++y) for (int x = 0; x < image.width; ++x) {
@@ -103,6 +104,7 @@ Image decodeJpeg(const uint8_t* data, size_t size) {
 namespace {
 // Only inspect bounded JPEG APP1 segments. Malformed/unsupported metadata means
 // orientation 1; decoding and pixel-limit validation are handled independently.
+// 只检查有界的 JPEG APP1 段；损坏或不支持的元数据按方向 1 处理，解码与像素上限另行校验。
 int jpegOrientation(const char* path) {
     std::ifstream input(path, std::ios::binary); unsigned char signature[2]{}; input.read(reinterpret_cast<char*>(signature), 2);
     if (signature[0] != 0xff || signature[1] != 0xd8) return 1;

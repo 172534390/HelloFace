@@ -1,7 +1,12 @@
 import { util } from '@kit.ArkTS';
 import { FaceAction } from 'hiface';
 
-/** 为 Demo 生成不可预测且不重复的动作挑战；生产接入也应由可信随机源生成挑战。 */
+/**
+ * Generate unpredictable, nonrepeating Demo action challenges; production integrations should also use
+ * a trusted random source.
+ *
+ * 为 Demo 生成不可预测且不重复的动作挑战；生产接入也应由可信随机源生成挑战。
+ */
 export class FaceChallenge {
   static async randomActions(count: number): Promise<ReadonlyArray<FaceAction>> {
     const actions: FaceAction[] = [

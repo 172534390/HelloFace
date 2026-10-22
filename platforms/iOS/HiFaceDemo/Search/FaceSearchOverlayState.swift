@@ -1,6 +1,9 @@
 import Foundation
 import HiFace
 
+/// Cache scores only for drawing; business decisions always follow final SDK results. Match Android:
+/// boxes live 1.2 seconds, scores 1 second. Borrow scores only across continuous frames within 300 ms
+/// with mutually unique, uncrowded boxes. This affects drawing only, not identity tracking.
 /// 只缓存人脸框的显示评分。业务结论始终以 SDK 的最终结果为准。
 ///
 /// 与 Android Demo 一致：检测框保留 1.2 秒，评分保留 1 秒；只有连续 300 毫秒内
@@ -28,6 +31,7 @@ struct FaceSearchOverlayState {
             self.frameID = frameID
             self.deadline = deadline
             let faceID = face.thresholdPassed ? face.faceID : nil
+            // Only an actual lookup score can establish mismatch; low scores remain in SDK results.
             // 只有实际查库评分才能判定未匹配，低分仍保留在 SDK 结果中。
             let identity = faceID ?? (face.similarity != nil ? DemoL10n.text("未匹配") : "")
             let title = livenessRejected
@@ -43,6 +47,8 @@ struct FaceSearchOverlayState {
             let color: BoxColor = livenessRejected ? .unmatched
                 : face.thresholdPassed && !finalResult ? .pending
                 : face.thresholdPassed ? .matched : .unmatched
+            // Reuse formatted text throughout a score's lifetime instead of formatting floats on every Canvas
+            // draw.
             // 评分生命周期内复用文案，不在每次 Canvas 绘制时重复格式化浮点数。
             box = Box(color: color, title: title, details: details.joined(separator: " · "))
         }
@@ -51,6 +57,8 @@ struct FaceSearchOverlayState {
     private(set) var frame: FaceSearchFrame?
     private(set) var newestFrameID: UInt64?
     private var scores: [Score?] = []
+    // Search selects at most five faces; bit flags avoid clearing/rebuilding Set hash storage on every
+    // frame.
     // 搜索最多五张脸；位标记避免每个新帧清空/重建 Set 的哈希存储。
     private var scoredThisFrame: UInt64 = 0
     private var rejectedThrough: UInt64?
@@ -83,6 +91,7 @@ struct FaceSearchOverlayState {
         let wasVisible = hasVisibleFaces
         expire(now: now)
         let sameFrame = value.frameID == newestFrameID
+        // An expired frame's late score cannot revive its vanished boxes.
         // 已过期的同帧晚到评分不能使消失的框重新出现。
         if sameFrame && frame == nil { return wasVisible }
         let previousFrame = frame
@@ -98,6 +107,7 @@ struct FaceSearchOverlayState {
                     ? Self.associate(value.faces, at: index, with: previousFrame!.faces) : nil
             let old = previousIndex.flatMap { scores.indices.contains($0) ? scores[$0] : nil }
             if face.similarity != nil && (rejectedThrough.map { value.frameID > $0 } ?? true) {
+                // Duplicate callbacks for one frame do not extend score display lifetime.
                 // 同帧重复回调不延长评分显示期限。
                 let bit = UInt64(1) << index
                 next[index] = scoredThisFrame & bit != 0 ? old
@@ -145,6 +155,8 @@ struct FaceSearchOverlayState {
             updated = true
             changed = true
         }
+        // If liveness rejects before intermediate scoring, the current sole face may still display its
+        // liveness score.
         // 活体拒绝未收到中途评分时，当前唯一的人脸仍可展示活体分数。
         if rejected && !updated && frameID == newestFrameID && scoredThisFrame & 1 == 0
             && resultFrame.faces.count == 1 && displayed.faces.count == 1 {
@@ -241,6 +253,8 @@ struct FaceSearchOverlayState {
     }
 }
 
+/// Retain earlier checks when extending deadlines and schedule the new deadline after checking; earlier
+/// expiry or clearing still replaces immediately.
 /// 延长期限保留较早检查，到期检查后再安排新期限；提前到期或清空仍立即替换。
 struct FaceSearchOverlayExpirySchedule {
     private(set) var deadline: TimeInterval?

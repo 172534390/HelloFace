@@ -1,5 +1,6 @@
 import Foundation
 
+/// The Demo follows system locale without changing SDK errors, logs, or feature formats.
 /// Demo 按系统地区选语言，不改变 SDK 的错误、日志或特征格式。
 enum DemoL10n {
     static func language(for region: String?) -> String {
@@ -37,6 +38,7 @@ enum DemoL10n {
             localizedBundle = path.flatMap(Bundle.init(path:)) ?? bundle
         }
         let format = localizedBundle.localizedString(forKey: key, value: nil, table: "Localizable")
+        // Replace once so user-entered text such as {0} is not interpreted as another format placeholder.
         // 一次替换，防止用户输入的 {0} 等文本再次被当成格式占位符。
         var result = ""
         var remainder = format[...]

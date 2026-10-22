@@ -174,6 +174,8 @@ struct SearchLibraryView: View {
         }
     }
 
+    /// Retain import during system-dialog inactive state; release only on background entry and reread
+    /// committed data on return.
     /// 系统弹窗的 inactive 保留导入；切后台才释放，返回后重读已提交数据。
     private func updatePageActivity(for phase: ScenePhase) {
         guard isVisible else { return }

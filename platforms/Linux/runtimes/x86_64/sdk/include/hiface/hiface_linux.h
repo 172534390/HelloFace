@@ -15,6 +15,11 @@ extern "C" {
 HIFACE_API HiFaceStatus HIFACE_CALL hiface_linux_load_builtin_models_v1(
         HiFaceSessionHandle session, HiFaceModelLoadReportV1* out_report);
 
+/** Load only protected FLIR. No detector, feature or landmarks are needed.
+ * Then call hiface_session_evaluate_infrared_liveness_v1. Does not start a flow. */
+HIFACE_API HiFaceStatus HIFACE_CALL hiface_linux_load_infrared_model_v1(
+        HiFaceSessionHandle session, HiFaceModelLoadReportV1* out_report);
+
 #ifdef __cplusplus
 }
 #endif

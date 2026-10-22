@@ -54,6 +54,8 @@ struct FacePhotoPicker: UIViewControllerRepresentable {
                 parent.onCompletion(nil)
                 return
             }
+            // File representation avoids copying an entire large HEIF/JPEG into Data. Decode thumbnails
+            // synchronously inside the callback so temporary system URLs never escape their lifetime.
             // 文件表示避免先把大尺寸 HEIF/JPEG 整体复制进 Data；回调内同步完成缩略解码，
             // 不让系统临时 URL 逃出其有效生命周期。
             let maximumPixelSize = parent.maximumPixelSize
@@ -68,6 +70,8 @@ struct FacePhotoPicker: UIViewControllerRepresentable {
                     ))
                 }
                 Task { @MainActor [weak self] in
+                    // Decoding or MainActor delivery may finish after picker destruction; never overwrite a newer
+                    // selection or an exited screen.
                     // 解码或 MainActor 交付可能晚于选择器销毁，不能覆盖后续选择或已退出的页面。
                     guard let self, !invalidated else { return }
                     decoding = nil
@@ -78,8 +82,11 @@ struct FacePhotoPicker: UIViewControllerRepresentable {
     }
 }
 
+/// Size-limited decoder shared by gallery selection and face-library image import.
 /// 相册和人脸库图片导入共用的限尺寸解码器。
 enum StaticPhotoDecoder {
+    /// Preserve original resolution within the limit; downsample only oversized images and apply EXIF
+    /// orientation.
     /// 原图在指定上限内保持分辨率，仅超限时降采样，并应用 EXIF 方向。
     static func decode(fileURL: URL, maximumPixelSize: Int = 1_080) -> Result<HiFaceRGBAImage, HiFaceError> {
         let sourceOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]
@@ -89,6 +96,8 @@ enum StaticPhotoDecoder {
         return decode(source: source, maximumPixelSize: maximumPixelSize)
     }
 
+    /// Network import enters here only after enforcing the 20 MB limit; also downsample and apply EXIF
+    /// orientation.
     /// 网络导入只在 20 MB 上限检查后进入这里，同样降采样并应用 EXIF 方向。
     static func decode(data: Data) -> Result<HiFaceRGBAImage, HiFaceError> {
         let sourceOptions: [CFString: Any] = [kCGImageSourceShouldCache: false]

@@ -47,6 +47,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Demo enrollment and library storage: one handle per screen, serialized background access, and main-
+ * thread results. Both bulk manifests come only from Demo assets, outside SDK AAR resources and public
+ * protocols. Replace demo image URLs with authorized face-test images and use a CDN for business
+ * integration.
+ *
  * Demo 录入和库管理的存储入口：每个页面实例一个句柄，后台串行读写，结果统一回到主线程。
  * 两份批量清单只从 Demo assets 读取，不属于 SDK AAR 的资源或公开协议。
  * 图片清单仅供演示；业务接入时请换成已获授权的人脸测试图片 URL，并使用 CDN 加速。
@@ -87,7 +92,12 @@ final class FaceSearchStore implements AutoCloseable {
         HiFaceResult<T> run(FaceSearchDatabase database, Request<?> request);
     }
 
-    /** 使旧任务失效：跳过尚未开始的工作并抑制结果回调；已提交的数据库批次保持有效。 */
+    /**
+     * Invalidate old tasks: skip work not yet started and suppress callbacks while preserving committed
+     * database batches.
+     *
+     * 使旧任务失效：跳过尚未开始的工作并抑制结果回调；已提交的数据库批次保持有效。
+     */
     static final class Request<T> {
         private volatile boolean cancelled;
         private volatile boolean stopRequested;
@@ -117,7 +127,12 @@ final class FaceSearchStore implements AutoCloseable {
             this.importOperation = importOperation;
         }
 
-        /** 停止新输入但保留完成回调，让导入线程保存已提取的尾批。 */
+        /**
+         * Stop new input but retain the completion callback so the import thread can save the extracted final
+         * batch.
+         *
+         * 停止新输入但保留完成回调，让导入线程保存已提取的尾批。
+         */
         @MainThread
         void stop() {
             stopRequested = true;
@@ -131,7 +146,11 @@ final class FaceSearchStore implements AutoCloseable {
 
         int savedCount() { return savedCount; }
 
-        /** 取消后续工作及待交付回调；已经执行的 SQL 或图片推理自然结束。 */
+        /**
+         * Cancel later work and pending callbacks; allow SQL and image inference already running to finish.
+         *
+         * 取消后续工作及待交付回调；已经执行的 SQL 或图片推理自然结束。
+         */
         @MainThread
         synchronized void cancel() {
             cancelled = true;
@@ -163,7 +182,11 @@ final class FaceSearchStore implements AutoCloseable {
             if (delivery != null && value != null) delivery.onResult(value);
         }
 
-        /** 主线程慢时只保留最新进度，不把 1000 张图片的 UI 回调逐条积压。 */
+        /**
+         * Retain only the latest progress when the main thread is slow instead of queuing 1,000 image updates.
+         *
+         * 主线程慢时只保留最新进度，不把 1000 张图片的 UI 回调逐条积压。
+         */
         synchronized void postProgress(int processed, int total) {
             postProgress(processed, total, savedCount, 0);
         }
@@ -190,7 +213,12 @@ final class FaceSearchStore implements AutoCloseable {
             if (delivery != null && value != null) delivery.onProgress(value);
         }
 
-        /** 排队任务只持有 Request；取消时立即释放页面、结果和尚未执行的输入。 */
+        /**
+         * Queued tasks retain only Request; cancellation immediately releases the screen, result, and
+         * unstarted input.
+         *
+         * 排队任务只持有 Request；取消时立即释放页面、结果和尚未执行的输入。
+         */
         private void releaseLocked() {
             task = null;
             callback = null;
@@ -215,7 +243,12 @@ final class FaceSearchStore implements AutoCloseable {
             connections.remove(connection);
         }
 
-        /** 在导入线程断开网络，避免关闭连接阻塞 UI；登记和停止互斥，不能漏掉刚启动的下载。 */
+        /**
+         * Disconnect on the import thread to avoid blocking UI; synchronize registration and stopping so newly
+         * started downloads are not missed.
+         *
+         * 在导入线程断开网络，避免关闭连接阻塞 UI；登记和停止互斥，不能漏掉刚启动的下载。
+         */
         void stopDownloads() {
             List<HttpURLConnection> pending;
             synchronized (this) {
@@ -227,7 +260,12 @@ final class FaceSearchStore implements AutoCloseable {
         }
     }
 
-    /** 列表只需要 ID、分组和标签，不把特征向量保留到主线程或 Adapter。 */
+    /**
+     * Lists need only ID, group, and tag; do not retain feature vectors on the main thread or in the
+     * Adapter.
+     *
+     * 列表只需要 ID、分组和标签，不把特征向量保留到主线程或 Adapter。
+     */
     static final class Person {
         final String id;
         final String group;
@@ -250,7 +288,11 @@ final class FaceSearchStore implements AutoCloseable {
         }
     }
 
-    /** 批量导入只向页面报告已处理数量；图片失败会跳过并继续。 */
+    /**
+     * Bulk import reports only processed counts to the screen; skip failed images and continue.
+     *
+     * 批量导入只向页面报告已处理数量；图片失败会跳过并继续。
+     */
     static final class ImportProgress {
         final int processed;
         final int total;
@@ -265,7 +307,11 @@ final class FaceSearchStore implements AutoCloseable {
         }
     }
 
-    /** 导入结束时区分成功写入与下载、检测或提取失败的图片。 */
+    /**
+     * At import completion, distinguish saved images from download, detection, or extraction failures.
+     *
+     * 导入结束时区分成功写入与下载、检测或提取失败的图片。
+     */
     static final class ImportSummary {
         final int imported;
         final int failed;
@@ -310,7 +356,11 @@ final class FaceSearchStore implements AutoCloseable {
     private FaceSearchDatabase database;
     private volatile boolean closed;
 
-    /** 为页面创建串行数据库线程，任务结果统一投递到主线程。 */
+    /**
+     * Create a serialized database thread for this screen and deliver all results on the main thread.
+     *
+     * 为页面创建串行数据库线程，任务结果统一投递到主线程。
+     */
     FaceSearchStore(Context context) {
         this(Executors.newSingleThreadExecutor(task -> new Thread(task, "HiFaceDemo-Database")),
                 mainThreadDispatcher(),
@@ -329,12 +379,17 @@ final class FaceSearchStore implements AutoCloseable {
         };
     }
 
-    /** 只保留 Application Context，由 SDK 决定人脸库文件名和存储路径。 */
+    /**
+     * Retain only Application Context; the SDK chooses the database filename and storage path.
+     *
+     * 只保留 Application Context，由 SDK 决定人脸库文件名和存储路径。
+     */
     private static Opener databaseOpener(Context context) {
         Context applicationContext = context.getApplicationContext();
         return () -> HiFaceSdk.openSearchDatabase(applicationContext);
     }
 
+    // Allow host tests to control task and callback ordering without a camera or Android Looper.
     // 允许主机测试控制任务与回调时序，不依赖相机或 Android Looper。
     FaceSearchStore(ExecutorService worker, Dispatcher main, Opener opener) {
         this(worker, main, opener, null);
@@ -348,7 +403,11 @@ final class FaceSearchStore implements AutoCloseable {
         this.opener = opener;
     }
 
-    /** 先统计总数再读取指定页，将记录裁成界面所需的 ID、分组和标签。 */
+    /**
+     * Count first, then read the requested page and retain only the ID, group, and tag required by the UI.
+     *
+     * 先统计总数再读取指定页，将记录裁成界面所需的 ID、分组和标签。
+     */
     @MainThread
     Request<Page> loadPage(int offset, int limit, Callback<Page> callback) {
         return execute((db, request) -> {
@@ -364,7 +423,11 @@ final class FaceSearchStore implements AutoCloseable {
         }, callback);
     }
 
-    /** 按 ID 读取一条轻量记录，未找到等状态原样交给页面处理。 */
+    /**
+     * Read a lightweight record by ID and pass not-found or other states unchanged to the screen.
+     *
+     * 按 ID 读取一条轻量记录，未找到等状态原样交给页面处理。
+     */
     @MainThread
     Request<Person> find(String faceId, Callback<Person> callback) {
         return execute((db, request) -> {
@@ -375,33 +438,56 @@ final class FaceSearchStore implements AutoCloseable {
         }, callback);
     }
 
-    /** 后台删除指定 ID，返回值表示是否实际删除了记录。 */
+    /**
+     * Delete the ID in the background; the return value indicates whether a record was actually removed.
+     *
+     * 后台删除指定 ID，返回值表示是否实际删除了记录。
+     */
     @MainThread
     Request<Boolean> delete(String faceId, Callback<Boolean> callback) {
         return execute((db, request) -> db.delete(faceId), callback);
     }
 
-    /** 从 APK 内置 JSON 流式读取 HF1 文本，每 1000 条原子写入一次。 */
+    /**
+     * Stream HF1 text from bundled JSON and commit every 1,000 records atomically.
+     *
+     * 从 APK 内置 JSON 流式读取 HF1 文本，每 1000 条原子写入一次。
+     */
     @MainThread
     Request<ImportSummary> importFeatureDemo(ProgressCallback progress, Callback<ImportSummary> callback) {
         return execute(this::importFeatureJson, callback, progress, true);
     }
 
-    /** 按内置清单逐张下载图片并同步提取特征，任何时刻只持有一张 Bitmap。 */
+    /**
+     * Download images from the bundled manifest and extract features synchronously, retaining at most one
+     * Bitmap at a time.
+     *
+     * 按内置清单逐张下载图片并同步提取特征，任何时刻只持有一张 Bitmap。
+     */
     @MainThread
     Request<ImportSummary> importImageDemo(FaceCaptureApi capture, ProgressCallback progress,
             Callback<ImportSummary> callback) {
         return execute((db, request) -> importImageJson(db, capture, request), callback, progress, true);
     }
 
-    /** 将本次采集的 HF1 文本排入数据库线程；布尔值只表示页面是否已经确认覆盖重复 ID。 */
+    /**
+     * Queue the captured HF1 text on the database thread; the boolean indicates only whether the screen
+     * confirmed duplicate-ID replacement.
+     *
+     * 将本次采集的 HF1 文本排入数据库线程；布尔值只表示页面是否已经确认覆盖重复 ID。
+     */
     @MainThread
     Request<Boolean> save(String faceId, String feature, String group, boolean overwriteConfirmed,
             Callback<Boolean> callback) {
         return execute((db, request) -> saveFeature(db, faceId, feature, group, overwriteConfirmed, request), callback);
     }
 
-    /** 新录入先检查重复 ID；用户明确确认覆盖后，保留 Demo 没有编辑的 tag。 */
+    /**
+     * Check for a duplicate ID before enrollment; after explicit replacement confirmation, preserve the
+     * tag not edited by this Demo.
+     *
+     * 新录入先检查重复 ID；用户明确确认覆盖后，保留 Demo 没有编辑的 tag。
+     */
     static HiFaceResult<Boolean> saveFeature(FaceSearchDatabase db, String faceId,
             String feature, String group, boolean overwriteConfirmed, Request<?> request) {
         if (request.cancelled) {
@@ -423,6 +509,7 @@ final class FaceSearchStore implements AutoCloseable {
             }
             tag = existing.isSuccess() ? existing.requireValue().getTag() : null;
         }
+        // The screen may leave during lookup; do not start a subsequent write afterward.
         // 查询期间页面可能已经离开；不再启动后续写入。
         if (request.cancelled) {
             return HiFaceResult.failure(HiFaceErrorCode.CLOSED, "Enrollment save cancelled");
@@ -430,7 +517,11 @@ final class FaceSearchStore implements AutoCloseable {
         return db.saveFeature(faceId, feature, 0, tag, group);
     }
 
-    /** 提取不可修改的展示列表，避免把特征数组随列表一起保留到主线程。 */
+    /**
+     * Build an immutable display list without retaining feature arrays on the main thread.
+     *
+     * 提取不可修改的展示列表，避免把特征数组随列表一起保留到主线程。
+     */
     static List<Person> people(List<? extends FaceSearchMetadata> entries) {
         List<Person> people = new ArrayList<>(entries.size());
         for (FaceSearchMetadata entry : entries) {
@@ -439,7 +530,11 @@ final class FaceSearchStore implements AutoCloseable {
         return Collections.unmodifiableList(people);
     }
 
-    /** 分页期间记录可能更新并移动位置；按 ID 合并，更新元数据且不向列表追加重复项。 */
+    /**
+     * Records can move during paging; merge by ID, update metadata, and never append duplicates.
+     *
+     * 分页期间记录可能更新并移动位置；按 ID 合并，更新元数据且不向列表追加重复项。
+     */
     static List<Person> mergePeople(List<Person> current, List<Person> page) {
         Map<String, Person> merged = new LinkedHashMap<>();
         for (Person person : current) merged.put(person.id, person);
@@ -574,6 +669,8 @@ final class FaceSearchStore implements AutoCloseable {
                     if (request.stopRequested) return finishImport(db, request, batch, imported, failed, processed, IMAGE_DEMO_COUNT, true);
                     DownloadedImage downloaded;
                     try {
+                        // Check cancellation periodically so the screen can read the library again without waiting for a slow-
+                        // download timeout.
                         // 定时检查取消，不能等慢下载超时后才允许页面重新读库。
                         Future<DownloadedImage> ready = completed.poll(200, TimeUnit.MILLISECONDS);
                         if (ready == null) continue;
@@ -589,6 +686,8 @@ final class FaceSearchStore implements AutoCloseable {
                         return cancelledImport();
                     }
                     if (request.stopRequested) return finishImport(db, request, batch, imported, failed, processed, IMAGE_DEMO_COUNT, true);
+                    // Consume in completion order and replenish before decoding, preventing a slow request from blocking
+                    // later images.
                     // 按完成顺序消费，并在解码前补位，避免慢请求阻塞后续图片。
                     pending = prefetchImages(reader, completed, pending - 1, request);
                     ImageEntry entry = downloaded.entry;
@@ -596,6 +695,8 @@ final class FaceSearchStore implements AutoCloseable {
                         failed++;
                         processed++;
                         Log.w(TAG, "Unable to download " + entry.faceId, downloaded.error);
+                        // Update after each image; report the final image only after its batch is saved to avoid duplicate
+                        // terminal progress.
                         // 每张结束立即更新；最后一张在尾批写库完成后报告，避免重复终值。
                         if (processed < IMAGE_DEMO_COUNT) {
                             request.postProgress(processed, IMAGE_DEMO_COUNT, imported, failed);
@@ -677,7 +778,12 @@ final class FaceSearchStore implements AutoCloseable {
         }
     }
 
-    /** 保存停止前已完成的结果；写库失败仍报告原有已提交数量。 */
+    /**
+     * Save results completed before stopping; a write failure still reports the previously committed
+     * count.
+     *
+     * 保存停止前已完成的结果；写库失败仍报告原有已提交数量。
+     */
     static HiFaceResult<ImportSummary> finishImport(FaceSearchDatabase db, Request<?> request,
             List<FaceSearchFeatureEntry> batch, int imported, int failed, int processed,
             int total, boolean stopped) {
@@ -763,7 +869,11 @@ final class FaceSearchStore implements AutoCloseable {
         return reader.nextString();
     }
 
-    /** 下载阶段限制压缩数据大小，避免异常响应把 Demo 内存耗尽。 */
+    /**
+     * Bound compressed download size so an abnormal response cannot exhaust Demo memory.
+     *
+     * 下载阶段限制压缩数据大小，避免异常响应把 Demo 内存耗尽。
+     */
     private static byte[] download(String value, Request<?> request) throws IOException {
         URL url = new URL(value);
         if (!"https".equals(url.getProtocol())) {
@@ -781,6 +891,7 @@ final class FaceSearchStore implements AutoCloseable {
             }
             // getContentLengthLong() requires API 24. The download cap is only 20 MB,
             // so the API 1 int variant is sufficient and keeps the Demo compatible with minSdk 23.
+            // getContentLengthLong() 要求 API 24；下载上限仅 20 MB，API 1 的 int 版本足够，并兼容 Demo 的 minSdk 23。
             int contentLength = connection.getContentLength();
             if (contentLength > MAX_IMAGE_BYTES) {
                 throw new IOException("Image exceeds 20 MB");
@@ -807,7 +918,12 @@ final class FaceSearchStore implements AutoCloseable {
         }
     }
 
-    /** 先读尺寸再降采样，最终只把最长边不超过 1080px 的偶数尺寸 Bitmap 送入 SDK。 */
+    /**
+     * Read dimensions before downsampling; send only even-sized Bitmaps with a longest side of at most
+     * 1080 px to the SDK.
+     *
+     * 先读尺寸再降采样，最终只把最长边不超过 1080px 的偶数尺寸 Bitmap 送入 SDK。
+     */
     private static Bitmap decodeBitmap(byte[] encoded) throws IOException {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
@@ -853,7 +969,12 @@ final class FaceSearchStore implements AutoCloseable {
         return HiFaceResult.failure(HiFaceErrorCode.CLOSED, "Import cancelled");
     }
 
-    /** 按需开库并复用连接；打开失败不缓存错误，下次刷新可以重试。 */
+    /**
+     * Open and reuse the database on demand; do not cache an open failure, allowing the next refresh to
+     * retry.
+     *
+     * 按需开库并复用连接；打开失败不缓存错误，下次刷新可以重试。
+     */
     @MainThread
     private <T> Request<T> execute(Task<T> task, Callback<T> callback) {
         return execute(task, callback, null);
@@ -894,6 +1015,8 @@ final class FaceSearchStore implements AutoCloseable {
                 if (opened.isSuccess()) database = opened.requireValue();
                 else error = opened.requireError();
             }
+            // Opening may take time; revalidate afterward to avoid executing a queued deletion after the screen
+            // leaves.
             // 开库也可能耗时，返回后再次校验，避免离开页面后执行排队的删除。
             if (request.cancelled) return;
             if (closed || request.stopRequested) {
@@ -910,7 +1033,12 @@ final class FaceSearchStore implements AutoCloseable {
         return request;
     }
 
-    /** 导入停止新输入并保存尾批，再关库；其他未开始的任务及界面回调失效。 */
+    /**
+     * Stop new import input, save the final batch, then close the database; invalidate other unstarted
+     * tasks and UI callbacks.
+     *
+     * 导入停止新输入并保存尾批，再关库；其他未开始的任务及界面回调失效。
+     */
     @MainThread
     @Override
     public void close() {

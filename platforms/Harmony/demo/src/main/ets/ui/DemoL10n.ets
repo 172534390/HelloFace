@@ -2,7 +2,11 @@ import { i18n } from '@kit.LocalizationKit';
 import { resourceManager } from '@kit.LocalizationKit';
 import { DEMO_TEXT_RESOURCES, DemoTextResource } from './DemoTextResources';
 
-/** Demo 的区域语言和资源；SDK 原始错误及日志继续供开发者诊断。 */
+/**
+ * Demo locale and resources; raw SDK errors and logs remain available for developer diagnosis.
+ *
+ * Demo 的区域语言和资源；SDK 原始错误及日志继续供开发者诊断。
+ */
 export class DemoL10n {
   private static resources: resourceManager.ResourceManager | undefined = undefined;
   private static readonly cache: Map<string, string> = new Map();
@@ -24,6 +28,8 @@ export class DemoL10n {
     const configuration: resourceManager.Configuration = resources.getConfigurationSync();
     configuration.locale = DemoL10n.language === 'zh-Hans' ? 'zh-Hans-CN' : 'en-US';
     DemoL10n.resources = resources.getOverrideResourceManager(configuration);
+    // Select native resources such as menus and permission rationale too, without changing system language
+    // or region.
     // 同时选择菜单、权限理由等原生资源；不修改系统语言或地区。
     i18n.System.setAppPreferredLanguage(configuration.locale);
   }

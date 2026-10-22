@@ -3,6 +3,8 @@ import Foundation
 import SwiftUI
 import UIKit
 
+/// All camera screens and overlays share aspect-fit rules to avoid inconsistent cropping or zoom
+/// between screens.
 /// 所有相机页面与 Overlay 共用完整等比显示规则，避免页面间裁剪放大不一致。
 enum CameraPreviewLayout {
     static let gravity: AVLayerVideoGravity = .resizeAspect
@@ -24,6 +26,8 @@ struct CameraPreview: UIViewRepresentable {
     func makeUIView(context: Context) -> CameraPreviewView {
         let view = CameraPreviewView()
         view.backgroundColor = .black
+        // VoiceOver needs only screen status and action buttons; the raw camera layer has no actionable
+        // semantics.
         // VoiceOver 读取页面状态和操作按钮即可；原始相机图层本身没有可操作语义。
         view.isAccessibilityElement = false
         view.accessibilityElementsHidden = true

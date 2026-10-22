@@ -6,6 +6,7 @@ private struct ImageSearchFace: Identifiable {
     let id: Int
     let bounds: FaceBounds
     let crop: CGImage?
+    // Complete ID/score or error text shared by the photo and thumbnails.
     // 完整的“ID,分数”或错误状态，照片与缩略图共用。
     let label: String
     let matched: Bool
@@ -20,6 +21,8 @@ private final class ImageSearchModel: ObservableObject {
     @Published private(set) var processing = false
     private let sdk = DemoEnvironment.makeSDK()
     private var task: Task<Void, Never>?
+    // Increment on image change or screen exit; asynchronous model/database results must belong to the
+    // current generation.
     // 换图和离开页面时递增，异步模型/数据库结果必须属于当前这一轮。
     private var version = 0
 
@@ -160,6 +163,7 @@ struct FaceImageSearchView: View {
 
     private var navigationHeader: some View {
         HStack(spacing: 10) {
+            // Reuse the camera module's back control and accessibility label.
             // 与相机模块复用同一个返回控件和无障碍标签。
             DemoCameraButton(icon: "chevron.backward", label: DemoL10n.text("返回"), onDark: true) { dismiss() }
             Text(DemoL10n.text("图片人脸搜索识别")).font(.headline).lineLimit(1).minimumScaleFactor(0.8)
@@ -181,6 +185,7 @@ struct FaceImageSearchView: View {
                 if let image = model.preview {
                     Image(decorative: image, scale: 1).resizable().scaledToFit()
                         .frame(width: geometry.size.width, height: geometry.size.height)
+                    // Keep detection boxes in original image pixels; apply aspect-fit mapping only for display.
                     // 检测框沿用原图像素坐标，只在显示层做 aspect-fit 映射。
                     let scale = min(geometry.size.width / model.imageSize.width,
                                     geometry.size.height / model.imageSize.height)

@@ -37,7 +37,12 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** 图片多人搜索：SDK 负责检测与对齐提特征，Demo 负责逐脸查库和结果展示。 */
+/**
+ * Multi-face image search: the SDK detects, aligns, and extracts features; the Demo queries and
+ * displays each face.
+ *
+ * 图片多人搜索：SDK 负责检测与对齐提特征，Demo 负责逐脸查库和结果展示。
+ */
 public final class FaceImageSearchActivity extends AppCompatActivity {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -89,7 +94,12 @@ public final class FaceImageSearchActivity extends AppCompatActivity {
         });
     }
 
-    /** 换图即让上一轮失效；SDK 持有独立快照，旧 Bitmap 可安全释放。 */
+    /**
+     * Changing the image invalidates the previous request immediately; the SDK owns an independent
+     * snapshot, so the old Bitmap can be released safely.
+     *
+     * 换图即让上一轮失效；SDK 持有独立快照，旧 Bitmap 可安全释放。
+     */
     private void load(Bitmap bitmap) {
         int token = ++generation;
         if (request != null) request.cancel();
@@ -146,6 +156,7 @@ public final class FaceImageSearchActivity extends AppCompatActivity {
                         result.label = match.getEntry().getFaceId() + "," + String.format(Locale.ROOT, "%.2f", match.getScore());
                     }
                 }
+                // Build labels once for both the photo and thumbnails; never fabricate IDs or scores for errors.
                 // 标签只组装一次，照片和缩略图共用；错误结果不伪造 ID 或分数。
                 results.add(result);
             }
@@ -243,6 +254,8 @@ public final class FaceImageSearchActivity extends AppCompatActivity {
         @Override protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             if (bitmap == null) return;
+            // Display the image with aspect-fit; boxes and labels share the same scale and padding offsets without
+            // changing source coordinates.
             // 图片按 aspect-fit 展示，框和标签共用同一缩放与留白偏移，不改变原图坐标。
             float scale = Math.min(getWidth() / (float) bitmap.getWidth(), getHeight() / (float) bitmap.getHeight());
             float x = (getWidth() - bitmap.getWidth() * scale) / 2;

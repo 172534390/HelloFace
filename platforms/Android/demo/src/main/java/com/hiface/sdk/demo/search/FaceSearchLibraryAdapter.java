@@ -16,20 +16,33 @@ import com.hiface.sdk.demo.search.FaceSearchStore.Person;
 
 import java.util.List;
 
-/** 列表仅展示 ID、分组和标签，按实际显示的字段做局部更新。 */
+/**
+ * Display only ID, group, and tag; update rows according to those visible fields.
+ *
+ * 列表仅展示 ID、分组和标签，按实际显示的字段做局部更新。
+ */
 final class FaceSearchLibraryAdapter extends ListAdapter<Person, FaceSearchLibraryAdapter.Holder> {
     interface OnDeleteListener {
         void onDelete(String faceId);
     }
 
     static final DiffUtil.ItemCallback<Person> DIFF = new DiffUtil.ItemCallback<Person>() {
-        /** faceId 是记录身份，分组变化仍视为同一列表项。 */
+        /**
+         * faceId identifies the record; changing its group does not create a different list item.
+         *
+         * faceId 是记录身份，分组变化仍视为同一列表项。
+         */
         @Override
         public boolean areItemsTheSame(@NonNull Person oldPerson, @NonNull Person newPerson) {
             return oldPerson.id.equals(newPerson.id);
         }
 
-        /** 同一 ID 只比较界面展示的元数据，特征和更新时间不参与列表重绘。 */
+        /**
+         * For the same ID, compare only visible metadata; features and update timestamps do not trigger
+         * redraws.
+         *
+         * 同一 ID 只比较界面展示的元数据，特征和更新时间不参与列表重绘。
+         */
         @Override
         public boolean areContentsTheSame(@NonNull Person oldPerson, @NonNull Person newPerson) {
             return oldPerson.group.equals(newPerson.group) && oldPerson.tag.equals(newPerson.tag);
@@ -39,7 +52,12 @@ final class FaceSearchLibraryAdapter extends ListAdapter<Person, FaceSearchLibra
     private OnDeleteListener onDelete;
     private PendingCommit pendingCommit;
 
-    /** Diff 工作可自然完成，但取消后不再通过 commit 闭包保留 Activity 和整页数据。 */
+    /**
+     * Allow Diff computation to finish, but release Activity and page data from commit closures after
+     * cancellation.
+     *
+     * Diff 工作可自然完成，但取消后不再通过 commit 闭包保留 Activity 和整页数据。
+     */
     static final class PendingCommit implements Runnable {
         private Runnable action;
         PendingCommit(Runnable action) { this.action = action; }
@@ -72,7 +90,11 @@ final class FaceSearchLibraryAdapter extends ListAdapter<Person, FaceSearchLibra
         if (onDelete != null) onDelete.onDelete(faceId);
     }
 
-    /** 空列表期间暂缓恢复滚动状态，等待异步首批数据到达。 */
+    /**
+     * Defer scroll-state restoration while the list is empty until the first asynchronous page arrives.
+     *
+     * 空列表期间暂缓恢复滚动状态，等待异步首批数据到达。
+     */
     FaceSearchLibraryAdapter(OnDeleteListener onDelete) {
         super(DIFF);
         this.onDelete = onDelete;
@@ -103,11 +125,17 @@ final class FaceSearchLibraryAdapter extends ListAdapter<Person, FaceSearchLibra
             id = view.findViewById(R.id.personId);
             group = view.findViewById(R.id.personGroup);
             delete = view.findViewById(R.id.personDelete);
+            // A recycled card must delete its current ID, not a captured old ID or list position.
             // 复用卡片后必须删除当前 ID，不能捕获旧 ID 或列表位置。
             delete.setOnClickListener(v -> onDelete.onDelete(faceId));
         }
 
-        /** 刷新复用行的 ID、元数据和删除目标，空分组显示未分组文案。 */
+        /**
+         * Refresh the recycled row's ID, metadata, and deletion target; show the ungrouped label for an empty
+         * group.
+         *
+         * 刷新复用行的 ID、元数据和删除目标，空分组显示未分组文案。
+         */
         void bind(Person person) {
             faceId = person.id;
             id.setText(person.id);

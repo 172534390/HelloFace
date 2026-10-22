@@ -18,6 +18,8 @@ struct SearchLibraryPerson: Identifiable, Sendable, Equatable {
     }
 }
 
+/// Face-library management with exact lookup, paging, deletion, and two bulk-import modes; screen
+/// lifecycle owns connections and tasks.
 /// 人脸库管理：精确查询、滚动加载、删除和两种批量导入；连接与任务由页面生命周期管理。
 @MainActor
 final class SearchLibraryModel: ObservableObject {
@@ -92,6 +94,7 @@ final class SearchLibraryModel: ObservableObject {
         loadFirstPage()
     }
 
+    /// Prefetch when the final ten rows become visible, checking only that small window.
     /// 最后 10 条记录进入可见范围时预加载下一批，只检查这个小窗口。
     func loadMoreIfNeeded(current person: SearchLibraryPerson) {
         guard !isWorking, !isLookup, pendingDeleteFaceID == nil, pendingImport == nil, canLoadMore,
@@ -169,6 +172,7 @@ final class SearchLibraryModel: ObservableObject {
         importSaved = 0
         importNotice = nil
         let sdk: HiFaceSDK? = kind == .images ? {
+            // Each import owns an independent SDK; never reuse an old import's instance while it is closing.
             // 每次导入独立持有 SDK；旧导入仍在退出时不能复用其即将关闭的实例。
             let value = DemoEnvironment.makeSDK()
             imageImportSDK = value
@@ -304,6 +308,8 @@ final class SearchLibraryModel: ObservableObject {
         return operationGeneration
     }
 
+    /// Lookup, deletion, import, and refresh share first-page state updates to keep totals, offsets, and
+    /// list mode consistent.
     /// 查询、删除、导入和刷新共用首批状态更新，避免总数、偏移和列表模式不一致。
     private func apply(_ snapshot: ListSnapshot, lookup: Bool = false) {
         people = snapshot.people
@@ -337,6 +343,8 @@ final class SearchLibraryModel: ObservableObject {
         return ListSnapshot(count: total, people: entries.map(SearchLibraryPerson.init))
     }
 
+    /// Updates change recent ordering; merge pages by ID to refresh visible metadata and avoid duplicate
+    /// rows.
     /// 数据更新会改变 recent 排序；按 ID 合并分页结果，刷新已展示的元数据并避免重复行。
     private nonisolated static func merge(
         _ current: [SearchLibraryPerson],
@@ -356,6 +364,8 @@ final class SearchLibraryModel: ObservableObject {
         return merged
     }
 
+    /// Reuse one connection for the screen lifetime instead of reopening SQLite and rebuilding caches every
+    /// 100 rows.
     /// 页面生命周期内复用同一连接，避免每加载 100 条就重复打开 SQLite 和重建连接缓存。
     private func database() async throws -> FaceSearchDatabase {
         let opening = databaseTask ?? Task.detached { try HiFaceSDK.openSearchDatabase() }
@@ -366,6 +376,8 @@ final class SearchLibraryModel: ObservableObject {
             try Task.checkCancellation()
             return database
         } catch {
+            // Allow retries after open failure; a finishing old task must not clear a connection created by the
+            // new screen.
             // 打开失败允许重试；旧页面任务结束时不能清空新页面已建立的连接。
             if generation == databaseGeneration, !(error is CancellationError) {
                 databaseGeneration &+= 1

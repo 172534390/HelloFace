@@ -60,7 +60,12 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** CameraX 采集适配器：权限、预览、同步送帧与坐标映射；人脸算法由 SDK 负责。 */
+/**
+ * CameraX adapter for permissions, preview, synchronous frame delivery, and coordinate mapping; the
+ * SDK performs face analysis.
+ *
+ * CameraX 采集适配器：权限、预览、同步送帧与坐标映射；人脸算法由 SDK 负责。
+ */
 @SuppressLint("UnsafeOptInUsageError")
 public final class CameraPreviewFragment extends Fragment {
     private static final String TAG = "CameraPreviewFragment";
@@ -75,12 +80,16 @@ public final class CameraPreviewFragment extends Fragment {
     private int resolutionIndex;
     private boolean started, cameraRequested, analysisPaused, permissionPending, providerLoading;
     private boolean overlayEnabled;
+    // Zero preserves the device default; search switches between 15 FPS when active and 5 FPS when idle
+    // without faces.
     // 0 表示沿用设备默认；搜索页会在活跃 15 FPS 与无人脸待机 5 FPS 之间动态切换。
     private volatile int targetSessionFrameRate;
     private PreviewView.ScaleType scaleType = PreviewView.ScaleType.FIT_CENTER;
     private volatile boolean deliverFrames;
     private volatile FrameListener frameListener;
     private Runnable cameraReadyListener;
+    // Object identity identifies this binding; unbinding invalidates its old camera callbacks, analysis
+    // tasks, and timeouts.
     // 对象身份就是本次绑定的凭据；解绑后旧相机回调、分析任务和超时任务自然失效。
     private volatile Binding binding;
     private final View.OnLayoutChangeListener previewLayoutListener =
@@ -93,7 +102,12 @@ public final class CameraPreviewFragment extends Fragment {
                 else fail(R.string.camera_permission_required);
             });
 
-    /** 在分析线程同步消费 YUV Buffer，回调返回后 ImageProxy 会被关闭，不可异步持有帧。 */
+    /**
+     * Consume YUV buffers synchronously on the analysis thread; ImageProxy closes after the callback, so
+     * never retain the frame asynchronously.
+     *
+     * 在分析线程同步消费 YUV Buffer，回调返回后 ImageProxy 会被关闭，不可异步持有帧。
+     */
     @FunctionalInterface
     public interface FrameListener {
         void onFrame(@NonNull Yuv420Frame frame);
@@ -108,7 +122,12 @@ public final class CameraPreviewFragment extends Fragment {
         return (CameraPreviewFragment) fragment;
     }
 
-    /** 检测用 FIT_CENTER，搜索用 FILL_CENTER；Overlay 共用 CameraX 裁剪、旋转和镜像映射。 */
+    /**
+     * Detection uses FIT_CENTER and search uses FILL_CENTER; overlays share CameraX crop, rotation, and
+     * mirror transforms.
+     *
+     * 检测用 FIT_CENTER，搜索用 FILL_CENTER；Overlay 共用 CameraX 裁剪、旋转和镜像映射。
+     */
     @MainThread
     public void configureOverlayPreview(PreviewView.ScaleType scaleType) {
         overlayEnabled = true;
@@ -123,7 +142,12 @@ public final class CameraPreviewFragment extends Fragment {
         }
     }
 
-    /** 更新相机与分析的目标帧率，不重建用例；硬件不支持时由 Analyzer 时间戳门禁兜底。 */
+    /**
+     * Update camera and analysis target rates without rebuilding use cases; analyzer timestamp checks
+     * cover unsupported hardware rates.
+     *
+     * 更新相机与分析的目标帧率，不重建用例；硬件不支持时由 Analyzer 时间戳门禁兜底。
+     */
     @MainThread
     public void configureSessionFrameRate(int framesPerSecond) {
         if (framesPerSecond <= 0) {
@@ -170,7 +194,12 @@ public final class CameraPreviewFragment extends Fragment {
         return true;
     }
 
-    /** 首帧到达后在主线程通知宿主，避免权限申请和相机启动耗时占用挑战时限。 */
+    /**
+     * Notify the host on the main thread after the first frame, excluding permission and camera-start
+     * delays from the challenge timeout.
+     *
+     * 首帧到达后在主线程通知宿主，避免权限申请和相机启动耗时占用挑战时限。
+     */
     @MainThread
     public void setCameraReadyListener(@NonNull Runnable listener) {
         cameraReadyListener = Objects.requireNonNull(listener);
@@ -182,7 +211,12 @@ public final class CameraPreviewFragment extends Fragment {
         return started && current != null && current.hasFrame;
     }
 
-    /** 设置监听器后自动启动；View 停止时禁止新帧进入 SDK，已经开始的同步回调允许自然返回。 */
+    /**
+     * Start automatically after listener registration. Stop admitting new SDK frames when the View stops,
+     * but let in-flight synchronous callbacks finish.
+     *
+     * 设置监听器后自动启动；View 停止时禁止新帧进入 SDK，已经开始的同步回调允许自然返回。
+     */
     @MainThread
     public void setFrameListener(@NonNull FrameListener listener) {
         frameListener = Objects.requireNonNull(listener);
@@ -205,7 +239,11 @@ public final class CameraPreviewFragment extends Fragment {
         unbind();
     }
 
-    /** 只暂停送入 SDK 的分析，预览和相机用例保持绑定。 */
+    /**
+     * Pause only SDK analysis; keep the preview and camera use cases bound.
+     *
+     * 只暂停送入 SDK 的分析，预览和相机用例保持绑定。
+     */
     @MainThread
     public void pauseAnalysis() {
         analysisPaused = true;
@@ -231,6 +269,7 @@ public final class CameraPreviewFragment extends Fragment {
         previewView.setImplementationMode(overlayEnabled
                 ? PreviewView.ImplementationMode.COMPATIBLE : PreviewView.ImplementationMode.PERFORMANCE);
         previewView.setScaleType(scaleType);
+        // Wait for actual layout events instead of repeatedly posting tasks to wait for ViewPort.
         // 等待真实布局事件，不循环 post 等待 ViewPort。
         previewView.addOnLayoutChangeListener(previewLayoutListener);
         analysisExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "HiFaceDemo-CameraAnalysis"));
@@ -242,6 +281,8 @@ public final class CameraPreviewFragment extends Fragment {
         providerLoading = true;
         Context context = requireContext().getApplicationContext();
         ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(context);
+        // CameraProvider initialization belongs to the process; leaving the screen neither cancels it nor
+        // allows it to retain the Fragment strongly.
         // CameraProvider 初始化属于进程级任务，页面退出不取消它，也不能让它强持有 Fragment。
         WeakReference<CameraPreviewFragment> owner = new WeakReference<>(this);
         future.addListener(() -> {
@@ -301,7 +342,12 @@ public final class CameraPreviewFragment extends Fragment {
         super.onDestroyView();
     }
 
-    /** 唯一绑定入口：等待页面、权限、CameraProvider 和布局全部就绪。 */
+    /**
+     * Single binding entry point: wait for the screen, permissions, CameraProvider, and layout to be
+     * ready.
+     *
+     * 唯一绑定入口：等待页面、权限、CameraProvider 和布局全部就绪。
+     */
     @SuppressLint("MissingPermission")
     private void bindIfReady() {
         if (!started || !cameraRequested || binding != null || previewView == null) return;
@@ -334,6 +380,8 @@ public final class CameraPreviewFragment extends Fragment {
             UseCaseGroup.Builder group = new UseCaseGroup.Builder().addUseCase(next.preview).addUseCase(next.analysis);
             if (overlayEnabled) group.setViewPort(previewView.getViewPort());
             next.camera = provider.bindToLifecycle(getViewLifecycleOwner(), selectedCamera.getCameraSelector(), group.build());
+            // Apply an advertised rate on initial binding and lens switches too, not only during 15/5 FPS
+            // transitions.
             // 初次绑定/切镜头也下发实际支持的档位，不能只在 15/5 FPS 切换时更新。
             if (targetSessionFrameRate > 0) next.updateFrameRate(targetSessionFrameRate);
             next.camera.getCameraInfo().getCameraState().observe(getViewLifecycleOwner(), next.observer);
@@ -362,6 +410,8 @@ public final class CameraPreviewFragment extends Fragment {
         if (error == null || error.getCode() == CameraState.ERROR_CAMERA_IN_USE
                 || error.getCode() == CameraState.ERROR_MAX_CAMERAS_IN_USE) return;
         boolean retry = isResolutionError(error);
+        // CameraInfo can replay an earlier error; use the startup timeout until the newly bound camera
+        // actually opens.
         // CameraInfo 会重放上一轮错误；新绑定实际打开前，交给启动超时处理。
         if (retry && !current.opened) return;
         Log.w(TAG, "CameraState error=" + error.getCode());
@@ -441,7 +491,12 @@ public final class CameraPreviewFragment extends Fragment {
         provider.unbind(old.preview, old.analysis);
     }
 
-    /** 同一绑定的资源一起创建、一起释放；线程间只共享帧标记和不可变的坐标快照。 */
+    /**
+     * Create and release all resources for a binding together; share only frame markers and immutable
+     * coordinate snapshots across threads.
+     *
+     * 同一绑定的资源一起创建、一起释放；线程间只共享帧标记和不可变的坐标快照。
+     */
     private final class Binding {
         final Preview preview;
         final ImageAnalysis analysis;
@@ -456,7 +511,12 @@ public final class CameraPreviewFragment extends Fragment {
         volatile FrameMapping mapping;
         volatile long lastDeliveredTimestampNanos = Long.MIN_VALUE;
 
-        /** 与解绑互斥，防止分析线程在清空主队列后才投递旧 View 的回调。 */
+        /**
+         * Synchronize with unbinding so analysis cannot enqueue callbacks for an old View after the main queue
+         * is cleared.
+         *
+         * 与解绑互斥，防止分析线程在清空主队列后才投递旧 View 的回调。
+         */
         synchronized void post(Runnable action) {
             if (!released) main.postAtTime(action, this, SystemClock.uptimeMillis());
         }
@@ -483,13 +543,20 @@ public final class CameraPreviewFragment extends Fragment {
             analysis.setAnalyzer(analysisExecutor, this::analyze);
         }
 
-        /** 只更新已有会话的 AE 请求；没有合适硬件档位时由 analyze() 的时间戳门禁兜底。 */
+        /**
+         * Update only the current session's AE request; analyze() timestamp checks cover unavailable hardware
+         * ranges.
+         *
+         * 只更新已有会话的 AE 请求；没有合适硬件档位时由 analyze() 的时间戳门禁兜底。
+         */
         void updateFrameRate(int framesPerSecond) {
             lastDeliveredTimestampNanos = Long.MIN_VALUE;
             if (camera == null) return;
             try {
                 requestFrameRate(framesPerSecond);
             } catch (RuntimeException error) {
+                // AE changes are a best-effort power optimization; unsupported settings must not interrupt preview or
+                // trigger resolution fallback.
                 // AE 调整是尽力而为的省电策略；厂商不支持时不能打断预览或触发分辨率回退。
                 Log.w(TAG, "Unable to apply AE frame rate; throttling Analyzer only", error);
             }
@@ -538,6 +605,7 @@ public final class CameraPreviewFragment extends Fragment {
                     }
                     lastDeliveredTimestampNanos = timestamp;
                 }
+                // Frames discarded while idle or paused need no PlaneProxy/ByteBuffer wrappers or coordinate mapping.
                 // 待机/暂停丢弃的帧不必创建 PlaneProxy/ByteBuffer 包装或做坐标映射。
                 if (planes == null) planes = image.getPlanes();
                 if (planes.length < 3) return;
@@ -557,7 +625,12 @@ public final class CameraPreviewFragment extends Fragment {
         }
     }
 
-    /** 只下发 HAL 声明的取值；不支持 5 FPS 时也选择可用的最低采集上限。 */
+    /**
+     * Request only HAL-advertised values; if 5 FPS is unsupported, choose the lowest available capture
+     * ceiling.
+     *
+     * 只下发 HAL 声明的取值；不支持 5 FPS 时也选择可用的最低采集上限。
+     */
     @Nullable
     private static Range<Integer> selectFrameRateRange(CameraInfo cameraInfo, int framesPerSecond) {
         List<Range<Integer>> supported = new ArrayList<>(cameraInfo.getSupportedFrameRateRanges());
@@ -570,7 +643,12 @@ public final class CameraPreviewFragment extends Fragment {
         return index < 0 ? null : supported.get(index);
     }
 
-    /** 输入尺寸、旋转和裁剪不变时复用映射；额外镜像在主线程映射到 View 后处理。 */
+    /**
+     * Reuse the transform while dimensions, rotation, and crop stay unchanged; apply extra mirroring after
+     * mapping into the View on the main thread.
+     *
+     * 输入尺寸、旋转和裁剪不变时复用映射；额外镜像在主线程映射到 View 后处理。
+     */
     private static final class FrameMapping {
         final int inputWidth, inputHeight, rotation, width, height;
         final Rect crop;

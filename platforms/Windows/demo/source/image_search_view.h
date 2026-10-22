@@ -6,6 +6,7 @@
 
 namespace hiface_demo {
 // Native Demo view. SDK data stays independent of HWND, GDI and selection state.
+// 原生 Demo 视图；SDK 数据独立于 HWND、GDI 和选中状态。
 class ImageSearchView {
 public:
     void create(HWND parent, Theme& theme);

@@ -28,7 +28,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
-/** 系统图片选择与预处理：后台按用途解码，图片搜索保留 SDK 上限内的原始分辨率。 */
+/**
+ * System photo selection and preprocessing: decode in the background for the intended use; image
+ * search preserves original resolution within SDK limits.
+ *
+ * 系统图片选择与预处理：后台按用途解码，图片搜索保留 SDK 上限内的原始分辨率。
+ */
 public final class FacePhotoPicker implements AutoCloseable {
     private static final int DEFAULT_MAX_DIMENSION_PX = 1080;
     public static final int IMAGE_SEARCH_MAX_DIMENSION_PX = 4096;
@@ -71,7 +76,11 @@ public final class FacePhotoPicker implements AutoCloseable {
                 this::handlePickerResult);
     }
 
-    /** 打开系统图片选择器；连续调用时只交付最后一次请求。 */
+    /**
+     * Open the system photo picker; repeated calls deliver only the latest request.
+     *
+     * 打开系统图片选择器；连续调用时只交付最后一次请求。
+     */
     @MainThread
     public void pick(@NonNull Callback callback) {
         Objects.requireNonNull(callback, "callback");
@@ -139,7 +148,12 @@ public final class FacePhotoPicker implements AutoCloseable {
         }
     }
 
-    /** 解码方向正确的软件 Bitmap，并限制尺寸和像素格式；不做无用途的 JPEG 再编码。 */
+    /**
+     * Decode an upright software Bitmap with bounded dimensions and pixel format; avoid unnecessary JPEG
+     * re-encoding.
+     *
+     * 解码方向正确的软件 Bitmap，并限制尺寸和像素格式；不做无用途的 JPEG 再编码。
+     */
     @NonNull
     private Bitmap decode(@NonNull Uri uri) throws IOException {
         Bitmap decoded = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
@@ -158,7 +172,11 @@ public final class FacePhotoPicker implements AutoCloseable {
         }
     }
 
-    /** API 26-27 使用 BitmapFactory，并读取媒体库方向字段。 */
+    /**
+     * On API 26-27, use BitmapFactory and read the media-library orientation field.
+     *
+     * API 26-27 使用 BitmapFactory，并读取媒体库方向字段。
+     */
     @Nullable
     private Bitmap decodeWithBitmapFactory(@NonNull Uri uri) throws IOException {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
@@ -227,7 +245,11 @@ public final class FacePhotoPicker implements AutoCloseable {
         return sample;
     }
 
-    /** Decode at original size within the limit; never enlarge or erase a tiny dimension. */
+    /**
+     * Decode at original size within the limit; never enlarge or erase a tiny dimension.
+     *
+     * 上限内按原尺寸解码；不放大图片，也不裁掉本已很小的维度。
+     */
     static int[] decodeSize(int width, int height, int maximumDimension) {
         if (width < 2 || height < 2 || maximumDimension < 2 || maximumDimension > IMAGE_SEARCH_MAX_DIMENSION_PX) {
             throw new IllegalArgumentException("Invalid photo dimensions");
@@ -241,7 +263,12 @@ public final class FacePhotoPicker implements AutoCloseable {
         return new int[] {targetWidth, targetHeight};
     }
 
-    /** 仅超限图片缩小；奇数末边直接裁去 1px，保留其余像素的 1:1 映射。 */
+    /**
+     * Downscale only oversized images; crop 1 px from odd trailing edges and preserve all other pixels one
+     * to one.
+     *
+     * 仅超限图片缩小；奇数末边直接裁去 1px，保留其余像素的 1:1 映射。
+     */
     @NonNull
     private static Bitmap normalize(@NonNull Bitmap source, int maximumDimension) {
         int width = source.getWidth();
@@ -276,7 +303,12 @@ public final class FacePhotoPicker implements AutoCloseable {
         }
     }
 
-    /** 注解隔离 API 28 的 ImageDecoder 调用，避免旧系统类校验失败。 */
+    /**
+     * Isolate API 28 ImageDecoder calls with annotations to avoid class-verification failures on older
+     * systems.
+     *
+     * 注解隔离 API 28 的 ImageDecoder 调用，避免旧系统类校验失败。
+     */
     @RequiresApi(Build.VERSION_CODES.P)
     private static final class Api28Impl {
         private Api28Impl() {}
@@ -296,7 +328,11 @@ public final class FacePhotoPicker implements AutoCloseable {
         }
     }
 
-    /** 取消待返回结果并停止图片工作线程。 */
+    /**
+     * Cancel pending delivery and stop the image worker thread.
+     *
+     * 取消待返回结果并停止图片工作线程。
+     */
     @MainThread
     @Override
     public void close() {
@@ -308,6 +344,8 @@ public final class FacePhotoPicker implements AutoCloseable {
         pendingCallback = null;
         launcher.unregister();
         executor.shutdownNow();
+        // Already queued results must still enter deliver, which observes closed and releases the newly
+        // decoded Bitmap.
         // 已投递的结果仍需进入 deliver；它会看到 closed 并释放刚解码出的 Bitmap。
     }
 }

@@ -1,6 +1,10 @@
 import { FaceAction, FaceVerificationConfig } from 'hiface';
 
-/** Android FaceVerificationActivity 的挑战和验证策略。 */
+/**
+ * Challenge and verification policy matching Android FaceVerificationActivity.
+ *
+ * Android FaceVerificationActivity 的挑战和验证策略。
+ */
 export class FaceVerificationFlow {
   static readonly VERIFICATION_ACTION_COUNT: number = 2;
 

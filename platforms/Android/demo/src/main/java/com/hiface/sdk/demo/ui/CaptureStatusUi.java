@@ -7,7 +7,11 @@ import androidx.annotation.StringRes;
 import com.hiface.sdk.demo.R;
 import com.hiface.sdk.flow.FaceFlowStage;
 
-/** 录入与验证页共享的采集状态文案和稳定倒计时。 */
+/**
+ * Shared capture-status text and stability countdown for enrollment and verification screens.
+ *
+ * 录入与验证页共享的采集状态文案和稳定倒计时。
+ */
 public final class CaptureStatusUi {
     static final long CAPTURE_STABLE_COUNTDOWN_MILLIS = 700L;
 
@@ -26,6 +30,8 @@ public final class CaptureStatusUi {
             long stableCountdownMillis) {
         Integer text = statusText(status);
         if (text == null) {
+            // PERFORM_ACTION and FACE_FORWARD belong to liveness/dynamic verification, not guided capture. If
+            // received here, retain the previous prompt rather than showing incorrect guidance.
             // PERFORM_ACTION / FACE_FORWARD 属于活体与动态验证；引导采集不会走到，
             // 真出现时保持上一条提示，而不是显示一句语义不对的文案。
             return;

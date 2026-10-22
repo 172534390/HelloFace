@@ -2,11 +2,11 @@
 
 English | [简体中文](README.zh-CN.md)
 
-**0.0.3 Beta**
+**0.0.4 Beta**
 
 ### Offline face detection, capture, liveness, 1:1 verification and 1:N/M:N search.
 
-![HelloFace](AboutHelloFace.png)
+![HelloFace](AboutHelloFace-EN.png)
 
 | Platform | Requirements | Integration |
 |---|---|---|
@@ -19,9 +19,10 @@ English | [简体中文](README.zh-CN.md)
 
 **More platforms (planned):** WeChat Mini Programs, Chrome, uni-app, Flutter plugins, React Native (RN) plugins, and more.
 
-The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
-Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
-Windows/Linux desktop and camera validation is pending. Configure your own application signing on mobile.
+- The SDK is in iterative public Beta testing. Please keep the SDK version up to date.
+- The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
+- Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
+- Windows/Linux desktop and camera features still require testing with physical cameras; mobile apps require your own application signing.
 
 [Releases](https://github.com/FaceSDKPro/HelloFace/releases) · [Android APK builds](https://github.com/FaceSDKPro/HelloFace/actions/workflows/android-demo.yml) · [Issues](https://github.com/FaceSDKPro/HelloFace/issues)
 

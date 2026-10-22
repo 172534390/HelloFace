@@ -12,8 +12,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/** Demo 专用的1:1 加密 Face ID/特征 Key-Value 存储；不属于 SDK API。 */
+/**
+ * Demo-only encrypted 1:1 Face ID/feature key-value storage, outside the SDK API.
+ *
+ * Demo 专用的1:1 加密 Face ID/特征 Key-Value 存储；不属于 SDK API。
+ */
 final class FaceFeatureStore {
+    // HF1 contains no model identity; store references by feature space and display only the current space
+    // after model changes.
     // HF1 本身不携带模型身份；按特征空间分开保存，换模型后只展示当前空间的参考特征。
     private static final String KEY_PREFIX = "face:" + FaceFeatureFormat.FEATURE_SPACE_ID + ":";
     private final MMKV mmkv = HiFaceDemoApplication.getMMKV();

@@ -4,6 +4,8 @@ import SwiftUI
 
 enum DemoEnvironment {
     static func makeSDK() -> HiFaceSDK {
+        // The binary SDK includes models; explicitly using the App Bundle overrides the SDK's Framework
+        // resource lookup.
         // 二进制 SDK 自带模型；显式指定 App Bundle 会覆盖 SDK 的 Framework 资源定位。
         HiFaceSDK()
     }

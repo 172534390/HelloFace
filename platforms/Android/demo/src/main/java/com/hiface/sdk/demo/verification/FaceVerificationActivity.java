@@ -20,7 +20,12 @@ import com.hiface.sdk.verification.FaceVerificationConfig;
 import java.util.List;
 import java.util.Locale;
 
-/** 从 Demo 已保存的 Face ID 中选择一个，并执行动作 + 静默活体 + 动态 1:1 复合认证。 */
+/**
+ * Choose a saved Demo Face ID and run combined action liveness, passive liveness, and dynamic 1:1
+ * authentication.
+ *
+ * 从 Demo 已保存的 Face ID 中选择一个，并执行动作 + 静默活体 + 动态 1:1 复合认证。
+ */
 public final class FaceVerificationActivity extends CameraFlowActivity {
     private static final int ACTION_COUNT = 2;
     private FaceFeatureStore featureStore;
@@ -76,9 +81,9 @@ public final class FaceVerificationActivity extends CameraFlowActivity {
         FaceVerificationConfig config = FaceVerificationConfig.builder()
                 .referenceFeature(faceFeature)
                 .threshold(FaceVerificationConfig.DEFAULT_THRESHOLD)
-                .actions(FaceFlowUi.randomActions(ACTION_COUNT)) //可设置0到4个随机动作活体
-                .enableSilentLiveness(true) //是否需要静默活体
-                .allowMultipleFaces(true) // 多人画面继续处理最大人脸
+                .actions(FaceFlowUi.randomActions(ACTION_COUNT)) //可设置0到4个随机动作活体 / Configure zero to four random liveness actions.
+                .enableSilentLiveness(true) //是否需要静默活体 / Whether passive liveness is required.
+                .allowMultipleFaces(true) // 多人画面继续处理最大人脸 / Continue with the largest face when multiple faces are visible.
                 .build();
 
         startCameraFlowRequest(() -> hiFaceSdk.verification().startCameraVerification(
@@ -101,6 +106,9 @@ public final class FaceVerificationActivity extends CameraFlowActivity {
                     }
 
                     /**
+                     * Invalid parameters or an underlying SDK failure prevented completion, so no business decision was
+                     * produced.
+                     *
                      * 传入参数错误，SDK底层异常导致SDK 无法完成这次请求，没有形成业务结论
                      */
                     @Override
@@ -111,7 +119,11 @@ public final class FaceVerificationActivity extends CameraFlowActivity {
                 }));
     }
 
-    /** 匹配和不匹配展示相似度；流程提前结束时只展示拒绝原因。 */
+    /**
+     * Show similarity for both match and mismatch; show only the rejection reason if the flow ends early.
+     *
+     * 匹配和不匹配展示相似度；流程提前结束时只展示拒绝原因。
+     */
     private void showVerificationResult(@NonNull FaceFlowResult result) {
         String message;
         switch (result.getOutcome()) {
@@ -124,22 +136,33 @@ public final class FaceVerificationActivity extends CameraFlowActivity {
                         faceId, formatSimilarityPercent(result.getSimilarity()));
                 break;
             default:
+                // The flow did not complete identity comparison; show only the rejection reason.
                 // 流程未完成身份比对，只展示拒绝原因。
                 message = FaceFlowUi.rejectionMessage(this, result.getOutcome());
                 break;
         }
+        // All business outcomes allow retry; handle SDK execution errors separately.
         // 业务结果均允许重试；SDK 执行错误由错误处理方法单独判断。
         showCompletionDialog(message, true);
     }
 
-    /** SDK 保证匹配/不匹配时有相似度；保留空值兜底，显示占位符而不是 0%。 */
+    /**
+     * The SDK guarantees similarity for match/mismatch; retain a null fallback and show a placeholder
+     * instead of 0%.
+     *
+     * SDK 保证匹配/不匹配时有相似度；保留空值兜底，显示占位符而不是 0%。
+     */
     @NonNull
     private static String formatSimilarityPercent(@Nullable Float similarity) {
         return similarity == null
                 ? "-" : String.format(Locale.getDefault(), "%.2f%%", similarity * 100f);
     }
 
-    /** 显示 SDK 执行错误；仅为可恢复错误提供重试入口。 */
+    /**
+     * Display SDK execution errors and offer retry only for recoverable failures.
+     *
+     * 显示 SDK 执行错误；仅为可恢复错误提供重试入口。
+     */
     private void showVerificationError(@NonNull HiFaceError error) {
         showCompletionDialog(DemoErrorUi.messageFor(this, error), DemoErrorUi.isRetryable(error));
     }

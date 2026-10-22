@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// 1:N/M:N search example: the screen owns session state while the shared coordinator owns frame
+/// delivery and camera lifecycle.
 /// 1:N/M:N 搜索接入示例：页面持有会话状态，送帧和相机生命周期由共享协调器负责。
 struct FaceSearchView: View {
     @ObservedObject var model: CameraDemoModel

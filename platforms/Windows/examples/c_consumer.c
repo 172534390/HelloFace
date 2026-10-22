@@ -1,4 +1,8 @@
 /* 各平台必须实际链接完整 Core；只生成 .a 不会发现 NCNN/libyuv 的未解析符号。
+ * Every platform must link the complete Core; creating only a static archive misses unresolved
+ * NCNN/libyuv symbols. Run this pure C consumer on the host; cross-compilation proves linking, not
+ * real-device inference.
+ *
  * 主机同时运行此纯 C 消费者；交叉编译只链接，不能把它记作真机推理验收。 */
 #include "hiface/hiface_c_api.h"
 #include <stdio.h>

@@ -1,25 +1,67 @@
-# HiFace Android · 0.0.3 Beta
+# HiFace Android 集成 Demo
 
 [English](README.md) | 简体中文
 
-Android 6.0+，ARM64/ARMv7。使用 JDK 17、Android SDK 36 / Build Tools 36.0.0；构建 Demo 无需 NDK。
+SDK / Demo：**0.0.4 Beta**
+
+支持检测、采集、活体、1:1 比对、1:N/M:N 搜索和人脸库管理，算法在设备端运行。
+
+**模型适用范围：当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。**
+
+指南：[SDK](docs/SDK.zh-CN.md) · [Demo](docs/DEMO.zh-CN.md)。
 
 ## 运行
 
-Android Studio 打开本目录，运行 `demo`，或执行：
+用 Android Studio 打开本目录，使用 JDK 17、Android SDK 36 / Build Tools 36.0.0，在 ARM 手机运行 `demo`。最低 Android 6.0 / API 23；支持 `arm64-v8a`、`armeabi-v7a`，构建 Demo 无需 NDK。
 
 ```sh
 ./gradlew :demo:assembleDebug
 ```
 
-APK 位于 `demo/build/outputs/apk/debug/`。Release 使用自己的签名证书。
+APK 位于 `demo/build/outputs/apk/debug/`。
 
-## 接入
+## 集成到自己的 App
 
-复制 `maven-repository/` 到自己的工程，按 [SDK 指南](docs/SDK.zh-CN.md) 配置依赖、`noCompress` 和相机权限。
+复制交付包的 `maven-repository/` 并配置仓库：
 
-示例：[相机](demo/src/main/java/com/hiface/sdk/demo/camera/CameraPreviewFragment.java) · [搜索](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchActivity.java) · [人脸库](demo/src/main/java/com/hiface/sdk/demo/search/FaceSearchLibraryActivity.java)。
-`demo/src/main/assets/face_search/` 为演示数据；网络图片导入需联网。1:1 基准使用 MMKV，业务接入时替换演示密钥；HF1 和 SDK 人脸库未加密。
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        maven {
+            url = uri("maven-repository")
+            content { includeModule("io.github.facesdkpro", "hiface-android") }
+        }
+        mavenCentral()
+    }
+}
+```
 
-SDK正在Beta 迭代公测中，请及时升级SDK版本。当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。
-人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+宿主 App 模块添加依赖和模型打包配置：
+
+```kotlin
+dependencies {
+    implementation("io.github.facesdkpro:hiface-android:0.0.4")
+}
+android {
+    defaultConfig {
+        minSdk = 23
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    androidResources { noCompress += "bphfm" }
+}
+```
+
+保留 consumer R8 规则，动态申请 `CAMERA`；网络导入需 `INTERNET`。
+
+相机示例：[CameraPreviewFragment](demo/src/main/java/com/hiface/sdk/demo/camera/CameraPreviewFragment.java)。帧与生命周期要求见 SDK 指南。
+
+## 签名与期限
+
+Debug 签名仅供测试；Release APK 使用自己的证书。保留 [LICENSE](LICENSE) 和交付信息。
+
+SDK正在Beta 迭代公测中，请及时升级SDK版本。[更新与说明](https://github.com/FaceSDKPro/) · [问题反馈](https://github.com/FaceSDKPro/HelloFace/issues)。

@@ -3,6 +3,7 @@ import AVFoundation
 import HiFace
 import SwiftUI
 
+/// Demo screen state; FaceFlowOutcome and FaceSearchEndReason still represent SDK business outcomes.
 /// Demo 页面状态；SDK 的业务终态仍由 `FaceFlowOutcome` 和 `FaceSearchEndReason` 表达。
 enum CameraDemoPhase: Equatable {
     case preparing
@@ -13,6 +14,8 @@ enum CameraDemoPhase: Equatable {
     case needsReference
 }
 
+/// Camera-screen coordinator connecting AVFoundation, SDK requests, and SwiftUI state. UI and Search
+/// groups own text mappings.
 /// 相机能力页面的协调器：连接 AVFoundation、SDK 请求和 SwiftUI 展示状态。
 /// 文案映射由 UI 与 Search 分组负责。
 @MainActor
@@ -20,6 +23,7 @@ final class CameraDemoModel: ObservableObject {
     private static let captureStableCountdownMilliseconds: Int64 = 700
 
     // MARK: - Published presentation state
+    // 公开的展示状态。
 
     @Published var detection: FaceDetectionResult?
     @Published var previewMirrored = true
@@ -58,6 +62,7 @@ final class CameraDemoModel: ObservableObject {
     var cameraDisplayMetrics: String { "\(cameraResolution) · \(cameraZoom)" }
 
     // MARK: - SDK and lifecycle state
+    // SDK 与生命周期状态。
 
     let sdk: HiFaceSDK
     let pipeline: CameraPipeline
@@ -84,6 +89,7 @@ final class CameraDemoModel: ObservableObject {
         let detectionConfiguration = mode == .detection
             ? (try? FaceDetectionConfiguration(maxFaces: 10, includesDetailedLandmarks: true)) ?? .default
             : FaceDetectionConfiguration.default
+        // Search defaults to 640x480; saved camera settings take precedence.
         // 搜索默认 640×480，已保存的相机设置优先。
         let cameraSettings = DemoCameraSettings.load(
             defaultAnalysisResolution: mode == .search ? .low : .medium
@@ -92,6 +98,7 @@ final class CameraDemoModel: ObservableObject {
             sdk: sdk,
             detectionConfiguration: detectionConfiguration,
             settings: cameraSettings,
+            // Search targets 15 FPS while active and 5 FPS while idle; other screens use a fixed rate.
             // 搜索活跃 15 FPS、待机 5 FPS；其他页面固定帧率。
             sessionFramesPerSecond: mode == .search ? 15 : 30,
             minimumSessionFramesPerSecond: mode == .search ? 5 : nil,
@@ -150,6 +157,8 @@ final class CameraDemoModel: ObservableObject {
         suspended = false
         cameraReady = false
         if mode == .capture { enrollmentCompleted = false }
+        // Resume after permission is granted in Settings; reread reference identities when returning from
+        // enrollment.
         // 从系统设置授权后恢复；从录入页返回时重新读取参考身份。
         if needsCameraSettings, AVCaptureDevice.authorizationStatus(for: .video) == .authorized {
             needsCameraSettings = false
@@ -159,6 +168,8 @@ final class CameraDemoModel: ObservableObject {
             phase = .preparing
         }
         if mode == .capture, !enrollsInSearchLibrary { refreshReferenceFaces() }
+        // Retain completed previews and reference selection across permission prompts, backgrounding, and
+        // temporary navigation away.
         // 权限弹窗、切后台或临时离开页面后，保留已完成的预览和参考身份选择。
         pipeline.start(analysisEnabled: false)
     }
@@ -190,6 +201,7 @@ final class CameraDemoModel: ObservableObject {
         lastSearchError = nil
     }
 
+    /// Retain the search session in the background; start() resumes it on foreground return.
     /// 后台保留搜索会话，返回前台由 start() 恢复。
     func suspend() {
         guard started, !suspended else { return }
@@ -207,6 +219,7 @@ final class CameraDemoModel: ObservableObject {
         pipeline.stop()
     }
 
+    /// Stop and background pause share cleanup; callers choose whether to close or retain search.
     /// 停止和后台暂停共用收尾；搜索会话由调用方决定关闭或保留。
     private func cancelPendingCameraWork() {
         cameraReady = false
@@ -222,6 +235,8 @@ final class CameraDemoModel: ObservableObject {
         detection = nil
     }
 
+    /// Request 5 FPS after ten continuous no-face seconds; the session falls back within supported ranges
+    /// while SDK input keeps target throttling.
     /// 连续无人脸 10 秒后请求 5 FPS，会话按支持范围回退，SDK 输入保持目标门禁。
     func setSearchCameraIdle(_ idle: Bool) {
         guard mode == .search else { return }
@@ -250,11 +265,13 @@ final class CameraDemoModel: ObservableObject {
         resetActionProgress()
         failureAllowsRetry = true
         phase = .preparing
+        // Recheck permissions and resume/rebuild the camera session; start() is safe while already running.
         // 重新检查权限并恢复/重建相机会话；已在运行时 `start()` 是安全的。
         pipeline.start(analysisEnabled: false)
     }
 
     // MARK: - Capture and enrollment
+    // 采集与录入。
 
     @discardableResult
     func saveCapturedReference() -> Bool {
@@ -277,6 +294,8 @@ final class CameraDemoModel: ObservableObject {
         }
     }
 
+    /// Save search enrollment directly from the captured result, matching Android without passing through
+    /// 1:1 reference storage.
     /// 搜索录入直接保存本次采集结果，与 Android 一样不经过 1:1 参考样本中转。
     func saveSearchCapture(replace: Bool = false) {
         guard started, enrollsInSearchLibrary, canSaveCapturedReference,
@@ -314,6 +333,8 @@ final class CameraDemoModel: ObservableObject {
         }
     }
 
+    /// Open and query off the main thread; after cancellation, start no save but let submitted database
+    /// work finish.
     /// 开库和查询在非主线程执行；取消后不再发起保存，已提交的数据库操作自然结束。
     private nonisolated static func persistSearchCapture(
         faceID: String, feature: String, group: String, replace: Bool
@@ -342,12 +363,14 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - Search
+    // 搜索。
 
     var searchOptions: String {
         FaceSearchPresentation.options(for: searchConfiguration)
     }
 
     // MARK: - Verification
+    // 验证。
 
     func selectReference(_ faceID: String) -> Bool {
         do {
@@ -402,6 +425,7 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - Capture presentation
+    // 采集展示。
 
     var canSaveCapturedReference: Bool {
         pendingReferenceFeature != nil
@@ -409,11 +433,13 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - Search controls
+    // 搜索控制。
 
     func updateSearchConfiguration(_ configuration: FaceSearchSessionConfiguration) {
         guard mode == .search, !isSwitchingCamera else { return }
         searchConfiguration = configuration
         searchSession?.update(configuration: configuration)
+        // Retain nonrecoverable errors; applying settings must not restart a rejected session.
         // 不可恢复错误保持原提示，应用设置不能让被拒绝的会话重新启动。
         if let lastSearchError, !FaceSearchPresentation.canResumeSearch(lastSearchError) { return }
         lastSearchError = nil
@@ -437,15 +463,19 @@ final class CameraDemoModel: ObservableObject {
         phase = .preparing
         status = DemoL10n.text("正在准备")
         detail = DemoL10n.text("准备完成后自动开始")
+        // Recheck camera permission on resume.
         // 恢复时重新检查相机权限。
         pipeline.start(analysisEnabled: false)
     }
 
     // MARK: - Camera controls
+    // 相机控制。
 
     func switchCamera() {
         guard started, cameraReady, !isSwitchingCamera else { return }
         let wasRunning = phase == .running || phase == .preparing
+        // Match Android: retain the current secure challenge when switching cameras so switching cannot reroll
+        // the actions.
         // 与 Android 一致：活体切摄保留当前安全挑战，避免切摄重新随机“换题”。
         let preservesLivenessRequest = mode == .liveness && phase == .running && request != nil
         isSwitchingCamera = true
@@ -481,6 +511,7 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - SDK request creation
+    // SDK 请求创建。
 
     private func startFlowIfNeeded() {
         failureAllowsRetry = true
@@ -493,6 +524,8 @@ final class CameraDemoModel: ObservableObject {
             phase = .running
             status = DemoL10n.text("保持正脸稳定")
             detail = DemoL10n.text("保持正脸稳定，生成特征与预览")
+            // Core requires 700 ms of stable frontal pose for capture; synchronize only the visual ring here,
+            // without making business decisions.
             // Core 要求采集时正脸连续稳定 700 ms；这里只同步可视圆环，不参与业务判定。
             actionTimeoutMilliseconds = Self.captureStableCountdownMilliseconds
             request = sdk.startCameraCapture(callbacks: FaceCaptureCallbacks(
@@ -537,6 +570,7 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - SDK callbacks
+    // SDK 回调。
 
     private func flowCallbacks() -> FaceFlowCallbacks {
         FaceFlowCallbacks(
@@ -554,6 +588,7 @@ final class CameraDemoModel: ObservableObject {
                 actionStepCount = 1
                 startActionCountdownIfNeeded()
             } else {
+                // Refill the ring when leaving frontal stability; restart the full 0.7-second timer on returning.
                 // 离开正脸稳定阶段即重新蓄满；再次回正后按完整 0.7 秒重新计时。
                 resetActionProgress()
             }
@@ -569,6 +604,8 @@ final class CameraDemoModel: ObservableObject {
             detail = DemoL10n.text("动作 {0}/{1}，完成后检测静默活体", [String(describing: nextStep), String(describing: actionStepCount)])
         } else if progress.action != nil,
                   progress.stage == .waitingForFace || progress.stage == .multipleFaces || progress.stage == .faceTooSmall {
+            // Brief face loss or distance changes do not pause Core's total action deadline or reset the visual
+            // ring.
             // 短暂丢脸或距离变化不会暂停 Core 的动作总时限，也不能重置显示圆环。
         } else {
             resetActionProgress()
@@ -606,6 +643,8 @@ final class CameraDemoModel: ObservableObject {
         case .liveness:
             let outcomeMessage = result.passed ? DemoL10n.text("活体检测通过") : FaceFlowPresentation.outcomeText(result.outcome)
             status = outcomeMessage
+            // Passing or spoof-detected results contain a score; early timeout or face loss shows only the reason.
+            // nil means no passive-liveness score, not zero; map preserves nil.
             // 通过或检测到非真人时已产生分数；动作超时、丢脸等提前结束时只展示结果原因。
             // nil 表示未产生静默活体分数，不能当作 0 分展示；map 在 nil 时保留 nil。
             let livenessScore = result.livenessScore
@@ -615,10 +654,12 @@ final class CameraDemoModel: ObservableObject {
             status = outcomeMessage
             var resultDetails: [String] = []
             if let selectedReferenceID { resultDetails.append("Face ID \(selectedReferenceID)") }
+            // Omit similarity if identity comparison did not finish; do not display 0%.
             // 未完成身份比对时没有相似度，省略该项，不能当作 0% 展示。
             if let similarity = result.similarity {
                 resultDetails.append(String(format: DemoL10n.text("相似度 %.2f%%"), similarity * 100))
             }
+            // Display passive-liveness and similarity scores separately; never fill missing scores with zero.
             // 静默活体分数与相似度分别展示；未产生的分数不补零。
             if let livenessScore = result.livenessScore {
                 resultDetails.append(String(format: DemoL10n.text("活体分数 %.3f"), livenessScore))
@@ -639,6 +680,8 @@ final class CameraDemoModel: ObservableObject {
 
     private func handle(_ frame: FaceSearchFrame) {
         guard started else { return }
+        // Private state still receives every frame ID; repeated empty frames do not republish the same empty
+        // image and wake SwiftUI.
         // 私有状态仍接收每个帧号；连续空帧不发布同一空画面以重复唤醒 SwiftUI。
         if searchDisplayState.accept(frame, now: ProcessInfo.processInfo.systemUptime) {
             searchOverlay = searchDisplayState
@@ -739,6 +782,8 @@ final class CameraDemoModel: ObservableObject {
         cameraReady = available
         cameraNotice = message
         guard !available else {
+            // On recovery notification, invalidate the interrupted flow; CameraPipeline then calls cameraDidStart
+            // to rebuild it.
             // 恢复通知到达时作废中断前的流程；CameraPipeline 随后调用 cameraDidStart 重建流程。
             guard phase == .running || phase == .preparing else { return }
             request?.cancel()
@@ -769,6 +814,7 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - Reference storage
+    // 参考基准存储。
 
     private func prepareReferenceSelection() {
         pipeline.pauseAnalysis()
@@ -803,6 +849,7 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - Transient presentation state
+    // 临时展示状态。
 
     private func resetActionProgress() {
         actionCountdownTask?.cancel()
@@ -839,6 +886,7 @@ final class CameraDemoModel: ObservableObject {
     }
 
     // MARK: - Detection presentation
+    // 检测展示。
 
     private static func detectionDetail(_ face: DetectedFace) -> String {
         var values = [String(format: DemoL10n.text("置信度 %.1f%%"), face.confidence * 100)]

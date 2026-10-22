@@ -1,14 +1,14 @@
-# HiFace 0.0.3 API Guide
+# HiFace 0.0.4 API Guide
 
 English | [简体中文](API.zh-CN.md)
 
 ## Installation
 
-The current model does not support face recognition for people under 12 and must not be used in financial scenarios.
-
-The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).
+**Model scope: The current model does not support face recognition for people under 12 and must not be used in financial scenarios.**
 
 Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
+
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).
 
 | Requirement | Supported |
 |---|---|
@@ -140,3 +140,28 @@ Pass each successful HF1 to `FaceSearchDatabase.search` for static M:N search. C
 The Demo home screen includes Image Face Search: album selection, original-image boxes, identity/score labels,
 aligned thumbnails and detected/matched counts. It uses all records, Top-1 and threshold 0.80, without liveness.
 Image search preserves original resolution up to the SDK limit of 4096px per side. Only oversized photos are reduced proportionally; odd last rows/columns are cropped by 1px. The size gate uses the resulting pixels. Comparison and bulk import keep their existing decoding limits.
+
+## IR-only liveness
+
+FLIR accepts upright, unmirrored GRAY8 IR measurements, 1..4096 pixels per side,
+including odd dimensions and row padding. Supply a detected face box in this IR image
+(x/y + width/height, at least 10x10). Camera access, IR face detection, illumination,
+and multiple-face handling belong to the host. RGB converted to gray is not IR.
+
+```swift
+let frame = InfraredFrame(gray: grayData, width: width, height: height,
+    rowStride: rowStride, faceBounds: boundsInIRImage)
+let result = await sdk.evaluateInfraredLiveness(frame,
+    realThreshold: calibratedThreshold)
+```
+
+Calibrate the explicit Float32 real threshold on the target IR camera. `realScore` is
+higher for live faces, `spoofScore = 1-realScore`; pass means `realScore >= threshold`.
+Check technical errors before reading the result. Android calls are synchronous on a
+worker thread; iOS/Harmony calls use the bounded background queue. Input is owned/copied.
+This entry does not change the RGB camera liveness/search flows. iOS requires accessible
+IR image data; the SDK does not obtain the internal Face ID IR stream.
+
+FLIR's published 99.8% attack interception and 97.6% genuine acceptance are private-set
+publisher results, not this SDK's target-camera accuracy. Strong light and 3D heads are
+known limitations. Retain the FLIR MIT notice in the SDK license; HiFace licensing remains separate.

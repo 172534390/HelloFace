@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Real-time detection example: preview and overlay aspect-fit the same frame coordinate space.
 /// 实时检测接入示例：预览和 Overlay 完整等比显示同一帧坐标系。
 struct FaceDetectionView: View {
     @ObservedObject var model: CameraDemoModel

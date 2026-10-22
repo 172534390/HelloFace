@@ -1,4 +1,9 @@
-/** 延长期限保留较早检查；提前到期或清空才替换，检查后再安排当前期限。 */
+/**
+ * Keep earlier checks when extending deadlines; replace only for earlier expiry or clearing, then
+ * schedule the current deadline after checking.
+ *
+ * 延长期限保留较早检查；提前到期或清空才替换，检查后再安排当前期限。
+ */
 export class FaceSearchOverlayExpirySchedule {
   private deadline: number = 0;
 

@@ -19,6 +19,8 @@ struct ComparisonPhotoState {
     var hasError = false
 }
 
+/// Asynchronous static-image screen model; versioning discards old task results after photo
+/// reselection.
 /// 静态图片页的异步状态模型；版本号用于丢弃用户重新选图后返回的旧任务结果。
 @MainActor
 final class StaticFaceComparisonModel: ObservableObject {
@@ -77,6 +79,7 @@ final class StaticFaceComparisonModel: ObservableObject {
         }
     }
 
+    /// Retain the previous usable image and feature if selection or decoding fails, matching Android Demo.
     /// 选图或解码失败时保留上一次可用图片和特征，与 Android Demo 行为一致。
     func reportPickerError(_ error: HiFaceError, for side: ComparisonSide) {
         photoTasks[side]?.cancel()
@@ -123,6 +126,8 @@ final class StaticFaceComparisonModel: ObservableObject {
 
     deinit { sdk.close() }
 
+    /// Clear old scores on image change/recomparison; temporary navigation cancels in-flight work but
+    /// retains completed results.
     /// 换图/重新比较清掉旧分数；暂时离开页面只取消在途工作，保留已经完成的结果。
     private func cancelComparison(keepingResult: Bool = false) {
         comparisonTask?.cancel()

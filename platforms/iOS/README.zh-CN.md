@@ -1,19 +1,30 @@
-# HiFace iOS · 0.0.3 Beta
+# HiFace iOS 集成 Demo
 
 [English](README.md) | 简体中文
 
-iOS 15+，Swift 6。
+SDK：**0.0.4 Beta**
 
-1. Xcode 打开 `HiFaceDemo.xcodeproj`，选择 `HiFaceDemo`。
-2. 配置自己的 Team 和 Bundle ID，在 iPhone 运行并允许相机权限。
+支持检测、采集、活体、1:1 比对、1:N/M:N 搜索和人脸库管理，算法在设备端运行。
 
-## 接入
+**模型适用范围：当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。**
 
-将 `SDK/` 添加为本地 Swift Package，选择 `HiFace`，保留 HiFace 和 HiFaceNative 两个二进制目标。
-使用 `HiFaceSDK()` 默认配置，在 App Info.plist 添加 `NSCameraUsageDescription`。接口见 [API 指南](SDK/API.zh-CN.md)。
+## 运行
 
-示例：[相机](HiFaceDemo/Camera/CameraPipeline.swift) · [业务流程](HiFaceDemo/Camera/CameraDemoModel.swift) · [人脸库](HiFaceDemo/Search/SearchLibraryView.swift)。
-`HiFaceDemo/Resources/FaceSearch/` 为演示数据；网络图片导入需联网。1:1 基准使用 Keychain；HF1 和 SDK 人脸库未加密。
+1. 用 Xcode 打开 `HiFaceDemo.xcodeproj`，选择 `HiFaceDemo`。
+2. 在 Signing & Capabilities 配置自己的 Team 和 Bundle ID。
+3. 在 iOS 15+ 的 iPhone 运行并允许相机权限。
 
-SDK正在Beta 迭代公测中，请及时升级SDK版本。当前模型不支持12周岁以下儿童人脸识别，不能用于金融相关场景。相机功能请在 iPhone 验证。
-人脸搜索识别要求摄像头成像清晰；室外环境下，摄像头宽动态范围须大于 100 dB。
+模拟器和 My Mac 适合界面或编译检查；相机和性能需在 iPhone 验证。
+
+## 工程
+
+| 目录 | 用途 |
+|---|---|
+| `HiFaceDemo/` | 可修改的 SwiftUI / AVFoundation 示例 |
+| `SDK/` | 二进制 SPM；保留 HiFace 和 HiFaceNative 两个目标 |
+
+使用 `HiFaceSDK()` 默认模型配置，在 App Info.plist 添加 `NSCameraUsageDescription`。
+
+接入说明：[SDK](SDK/README.zh-CN.md) · [Demo](DEMO.zh-CN.md)。
+
+SDK正在Beta 迭代公测中，请及时升级SDK版本。[更新说明](https://github.com/FaceSDKPro/)。

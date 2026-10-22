@@ -1,6 +1,7 @@
 import Foundation
 
 // Host-only SDK value stubs: the script compiles the real Demo state source on macOS.
+// 仅供宿主测试的 SDK 值类型桩；脚本在 macOS 编译真实 Demo 状态源码。
 struct FaceBounds {
     let x: Float
     let y: Float
@@ -60,6 +61,8 @@ struct FaceSearchOverlayStateTests {
         precondition(!idle.hasVisibleFaces && idle.box(at: 0).title.isEmpty)
         precondition(idle.accept(frame(10_004, [pending]), now: 2001.3))
         precondition(idle.box(at: 0).title.isEmpty)
+        // If a late callback expires a frame, publish cleanup once; cancelling the timer must not leave old
+        // boxes visible.
         // 迟到回调使帧到期时仍需发布一次清理，不能撤销定时器后留下旧框。
         precondition(idle.complete(FaceSearchResult(endReason: .timeout, livenessScore: nil,
                                                     frame: appeared), now: 2003))
@@ -95,7 +98,7 @@ struct FaceSearchOverlayStateTests {
         overlay.accept(frame(1, [pending]), now: 10)
         precondition(overlay.box(at: 0).color == .pending && overlay.box(at: 0).title.isEmpty)
         overlay.accept(frame(1, [matched]), now: 10.1)
-        precondition(overlay.box(at: 0).color == .pending) // 相似度达标，仍等最终结论。
+        precondition(overlay.box(at: 0).color == .pending) // 相似度达标，仍等最终结论。 / Similarity qualifies, but the final decision is still pending.
         overlay.complete(FaceSearchResult(endReason: .matchFound, livenessScore: 0.97,
                                           frame: frame(1, [matched])), now: 10.2)
         precondition(overlay.box(at: 0).color == .matched)
@@ -106,9 +109,9 @@ struct FaceSearchOverlayStateTests {
         }
 
         overlay.accept(frame(2, [pending]), now: 10.25)
-        precondition(overlay.box(at: 0).color == .matched) // 唯一相邻框可短时借用。
+        precondition(overlay.box(at: 0).color == .matched) // 唯一相邻框可短时借用。 / A unique adjacent box may briefly borrow the score.
         overlay.accept(frame(2, [low]), now: 10.3)
-        precondition(overlay.box(at: 0).color == .unmatched) // 新评分覆盖旧绿框。
+        precondition(overlay.box(at: 0).color == .unmatched) // 新评分覆盖旧绿框。 / A new score replaces the previous green box.
         overlay.expire(now: 11.1)
         precondition(overlay.frame != nil && overlay.box(at: 0).color == .unmatched)
         overlay.expire(now: 11.31)
@@ -123,7 +126,7 @@ struct FaceSearchOverlayStateTests {
         precondition(overlay.box(at: 0).details.isEmpty)
         overlay.accept(frame(3, [low]), now: 12.8)
         overlay.expire(now: 13.11)
-        precondition(overlay.box(at: 0).color == .pending) // 重复评分没有延长期限。
+        precondition(overlay.box(at: 0).color == .pending) // 重复评分没有延长期限。 / Duplicate scoring did not extend the deadline.
 
         overlay.clear()
         overlay.accept(frame(4, [pending]), now: 20)

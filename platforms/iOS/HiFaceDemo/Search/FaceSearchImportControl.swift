@@ -1,5 +1,6 @@
 import Foundation
 
+/// Stop new input and cancel network waits; let current extraction and the final save batch finish.
 /// 停止新输入并取消网络等待，当前特征提取和尾批写库自然完成。
 final class FaceSearchImportControl: @unchecked Sendable {
     private let lock = NSLock()

@@ -18,7 +18,11 @@ import com.hiface.sdk.common.HiFaceResult;
 import com.hiface.sdk.demo.R;
 import com.hiface.sdk.demo.ui.DemoErrorUi;
 
-/** 从系统相册选择两张图片并执行离线人脸 1:1 对比。 */
+/**
+ * Select two images from the system gallery and compare faces offline, one to one.
+ *
+ * 从系统相册选择两张图片并执行离线人脸 1:1 对比。
+ */
 public final class FaceComparisonActivity extends AppCompatActivity {
     private TextView compareButton;
     private TextView similarityValue;
@@ -51,7 +55,11 @@ public final class FaceComparisonActivity extends AppCompatActivity {
                 .build();
     }
 
-    /** 集中绑定页面事件。 */
+    /**
+     * Bind screen events in one place.
+     *
+     * 集中绑定页面事件。
+     */
     private void bindActions() {
         findViewById(R.id.backButton).setOnClickListener(view -> finish());
         leftSlot.setOnClickListener(view -> pickPhoto(leftSlot));
@@ -60,7 +68,11 @@ public final class FaceComparisonActivity extends AppCompatActivity {
         updateControls();
     }
 
-    /** 选择并预处理指定图片位的照片。 */
+    /**
+     * Select and preprocess a photo for the requested image slot.
+     *
+     * 选择并预处理指定图片位的照片。
+     */
     private void pickPhoto(@NonNull FacePhotoSlot slot) {
         photoPicker.pick(new FacePhotoPicker.Callback() {
             @Override
@@ -75,13 +87,19 @@ public final class FaceComparisonActivity extends AppCompatActivity {
         });
     }
 
-    /** SDK 管理图片推理和主线程回调，页面销毁时自动取消请求。 */
+    /**
+     * The SDK manages image inference and main-thread callbacks; requests cancel automatically when the
+     * screen is destroyed.
+     *
+     * SDK 管理图片推理和主线程回调，页面销毁时自动取消请求。
+     */
     private void extractPhotoFeature(@NonNull FacePhotoSlot slot, @NonNull Bitmap bitmap) {
         slot.setBitmap(bitmap);
         similarity = null;
         comparisonError = null;
         updateControls();
         hiFaceSdk.capture().fromBitmap(bitmap, result -> {
+            // Ignore both success and error from an old image after the photo is replaced or its slot is released.
             // 已更换照片或释放槽位时，旧图片的成功结果和错误都不再更新界面。
             if (slot.bitmap != bitmap) return;
             if (result.isSuccess()) {
@@ -94,7 +112,11 @@ public final class FaceComparisonActivity extends AppCompatActivity {
         });
     }
 
-    /** 两侧特征就绪后直接比较 String，不再读取 Bitmap 或重复运行模型。 */
+    /**
+     * Compare feature Strings directly once both are ready; do not reread Bitmaps or rerun models.
+     *
+     * 两侧特征就绪后直接比较 String，不再读取 Bitmap 或重复运行模型。
+     */
     private void compareFaces() {
         String faceFeature1 = leftSlot.feature;
         String faceFeature2 = rightSlot.feature;
@@ -102,20 +124,34 @@ public final class FaceComparisonActivity extends AppCompatActivity {
         showComparisonResult(hiFaceSdk.verification().compare(faceFeature1, faceFeature2));
     }
 
-    /** 分数常驻页面，不把相似度解释成身份概率或自行添加通过阈值。 */
+    /**
+     * Keep the score on screen; do not interpret similarity as identity probability or invent a pass
+     * threshold.
+     *
+     * 分数常驻页面，不把相似度解释成身份概率或自行添加通过阈值。
+     */
     private void showComparisonResult(@NonNull HiFaceResult<Float> result) {
         similarity = result.isSuccess() ? result.requireValue() : null;
         comparisonError = result.isFailure() ? DemoErrorUi.messageFor(this, result.requireError()) : null;
         updateControls();
     }
 
-    /** 新照片读取失败时保留槽位原有图片和特征，只在对应位置显示原因。 */
+    /**
+     * If reading a new photo fails, retain the slot's previous image and feature and show the error only
+     * in that slot.
+     *
+     * 新照片读取失败时保留槽位原有图片和特征，只在对应位置显示原因。
+     */
     private void showPhotoPickerError(@NonNull FacePhotoSlot slot, @NonNull String message) {
         slot.error = message;
         updateControls();
     }
 
-    /** 特征未就绪时禁用比较；照片处理过程中仍可更换任意一张照片。 */
+    /**
+     * Disable comparison until features are ready; either photo can still be replaced during processing.
+     *
+     * 特征未就绪时禁用比较；照片处理过程中仍可更换任意一张照片。
+     */
     private void updateControls() {
         boolean ready = leftSlot.feature != null && rightSlot.feature != null;
         compareButton.setEnabled(ready);
@@ -124,7 +160,11 @@ public final class FaceComparisonActivity extends AppCompatActivity {
         renderResult();
     }
 
-    /** 未得到分数时不占页面空间；换图立即清除上一次结果。 */
+    /**
+     * Use no screen space before a score exists; changing an image immediately clears the previous result.
+     *
+     * 未得到分数时不占页面空间；换图立即清除上一次结果。
+     */
     private void renderResult() {
         if (similarity != null) {
             similarityValue.setVisibility(View.VISIBLE);
@@ -147,7 +187,11 @@ public final class FaceComparisonActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    /** 管理单个图片槽位及其 Bitmap 生命周期，仅供本页面使用。 */
+    /**
+     * Own one image slot and its Bitmap lifecycle, only for this screen.
+     *
+     * 管理单个图片槽位及其 Bitmap 生命周期，仅供本页面使用。
+     */
     private static final class FacePhotoSlot implements AutoCloseable {
         private final View container;
         private final ImageView imageView;
@@ -165,7 +209,7 @@ public final class FaceComparisonActivity extends AppCompatActivity {
 
         FacePhotoSlot(@NonNull View root, @StringRes int labelText) {
             container = root.findViewById(R.id.photoContainer);
-            container.setClipToOutline(true); // 方法从 API 21 可用，XML 属性仅在较新系统生效。
+            container.setClipToOutline(true); // 方法从 API 21 可用，XML 属性仅在较新系统生效。 / The method is available from API 21; the XML attribute works only on newer systems.
             imageView = root.findViewById(R.id.photoImage);
             placeholder = root.findViewById(R.id.photoPlaceholder);
             loading = root.findViewById(R.id.photoLoading);
@@ -206,7 +250,12 @@ public final class FaceComparisonActivity extends AppCompatActivity {
             container.setContentDescription(label.getText() + " · " + state);
         }
 
-        /** 只取一次独立 Bitmap，释放原图；槽位保存裁剪图和 String，不长期持有整份结果。 */
+        /**
+         * Read the independent Bitmap once and release the original; retain only the cropped image and String,
+         * not the entire result.
+         *
+         * 只取一次独立 Bitmap，释放原图；槽位保存裁剪图和 String，不长期持有整份结果。
+         */
         void setCapture(@NonNull FaceCaptureResult capture) {
             setBitmap(capture.getAlignedFace());
             feature = capture.getFeature();

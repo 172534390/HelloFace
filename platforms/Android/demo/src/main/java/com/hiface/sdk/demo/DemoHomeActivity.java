@@ -25,7 +25,11 @@ import com.hiface.sdk.demo.search.FaceSearchActivity;
 import com.hiface.sdk.demo.verification.FaceEnrollmentActivity;
 import com.hiface.sdk.demo.verification.FaceVerificationActivity;
 
-/** Demo 首页：SDK 功能与相机设置入口。 */
+/**
+ * Demo home screen with SDK feature and camera-settings entry points.
+ *
+ * Demo 首页：SDK 功能与相机设置入口。
+ */
 public final class DemoHomeActivity extends AppCompatActivity {
 
     @Override
@@ -41,6 +45,7 @@ public final class DemoHomeActivity extends AppCompatActivity {
             if (clipboard != null) {
                 clipboard.setPrimaryClip(ClipData.newPlainText("DeviceInfo", deviceInfoText));
                 // Android 13+ already shows the system clipboard confirmation.
+                // Android 13 及以上已显示系统剪贴板确认提示。
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                     Toast.makeText(this, R.string.device_info_copied, Toast.LENGTH_SHORT).show();
                 }
@@ -77,7 +82,11 @@ public final class DemoHomeActivity extends AppCompatActivity {
         findViewById(R.id.aboutText).setOnClickListener(showAbout);
     }
 
-    /** 绑定功能卡片与页面。 */
+    /**
+     * Connect feature cards to their destination screens.
+     *
+     * 绑定功能卡片与页面。
+     */
     private void bindFeatureCard(
             @IdRes int viewId,
             @DrawableRes int icon,
@@ -87,6 +96,8 @@ public final class DemoHomeActivity extends AppCompatActivity {
         View feature = findViewById(viewId);
         ImageView featureIcon = feature.findViewById(R.id.featureIcon);
         featureIcon.setImageResource(icon);
+        // System menu icons have about 60% opacity; adjust only solid icon images to preserve the background
+        // brightness.
         // 系统菜单图标自带约 60% 的透明度；实色图标仅调整图像，保持底框亮度一致。
         featureIcon.setImageAlpha(
                 icon == android.R.drawable.ic_input_add || icon == R.drawable.ic_api_verified

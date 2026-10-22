@@ -1,12 +1,17 @@
 import { DemoL10n } from './DemoL10n';
 import { DemoTheme } from './DemoTheme';
 
-/** 浅色内容页的统一返回栏；布局与 Android NavigationButton.OnLight 对齐。 */
+/**
+ * Shared back bar for light content screens, matching Android NavigationButton.OnLight layout.
+ *
+ * 浅色内容页的统一返回栏；布局与 Android NavigationButton.OnLight 对齐。
+ */
 @Component
 export struct DemoPageHeader {
   @Prop title: string = '';
   @Prop titleSize: number = 20;
   onBack: () => void = () => {};
+  // Optional trailing action preserves the same back-button layout and tap area on all content screens.
   // 可选右侧操作，保留所有内容页相同的返回按钮与点击区域。
   @Prop actionTitle: string = '';
   onAction: () => void = () => {};

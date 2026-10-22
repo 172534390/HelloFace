@@ -5,7 +5,12 @@ import android.view.WindowManager;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/** 非搜索相机页的统一亮度策略：每次进入前台设为 90%，离开前台恢复原窗口值。 */
+/**
+ * Non-search camera screens use 90% brightness in the foreground and restore the previous window value
+ * on exit.
+ *
+ * 非搜索相机页的统一亮度策略：每次进入前台设为 90%，离开前台恢复原窗口值。
+ */
 public abstract class CameraBrightnessActivity extends AppCompatActivity {
     private static final float CAMERA_BRIGHTNESS = .90f;
 
@@ -30,7 +35,12 @@ public abstract class CameraBrightnessActivity extends AppCompatActivity {
         super.onPause();
     }
 
-    /** -1 表示恢复为继续跟随系统亮度，不把页面的 90% 写进系统设置。 */
+    /**
+     * A value of -1 restores system-controlled brightness; the screen's 90% setting never changes system
+     * preferences.
+     *
+     * -1 表示恢复为继续跟随系统亮度，不把页面的 90% 写进系统设置。
+     */
     private void restoreWindowBrightness() {
         if (!brightnessApplied) return;
         Window window = getWindow();

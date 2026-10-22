@@ -1,4 +1,8 @@
-/** 将旋转后的分析图坐标映射到居中的相机预览；与 XComponent 的 FIT/FILL 布局共用。 */
+/**
+ * Map rotated analysis coordinates into a centered preview, sharing XComponent FIT/FILL layout.
+ *
+ * 将旋转后的分析图坐标映射到居中的相机预览；与 XComponent 的 FIT/FILL 布局共用。
+ */
 export class PreviewCoordinateTransform {
   readonly scale: number;
   readonly offsetX: number;

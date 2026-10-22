@@ -93,6 +93,8 @@ struct DemoHomeView: View {
     }
 }
 
+/// Device diagnostics are for the Demo home screen only; hardware model approximates Android's Board
+/// field.
 /// 设备诊断信息仅用于 Demo 主页；硬件型号是 Android Board 的近似字段。
 @MainActor
 private enum DemoDeviceInfo {
@@ -123,6 +125,7 @@ private enum DemoDeviceInfo {
     }
 }
 
+/// Avoid creating cameras or Native Sessions when iOS 15 constructs destination screens early.
 /// 避免 iOS 15 提前构造目标页面时创建相机或 Native Session。
 struct LazyDestination<Content: View>: View {
     private let content: () -> Content
@@ -170,6 +173,8 @@ private struct DemoCard: View {
     }
 }
 
+/// Preserve NavigationLink system navigation and accessibility actions; add only lightweight press
+/// feedback.
 /// 保留 NavigationLink 的系统导航与辅助操作，仅补充轻量按下反馈。
 private struct HomeFeatureButtonStyle: ButtonStyle {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

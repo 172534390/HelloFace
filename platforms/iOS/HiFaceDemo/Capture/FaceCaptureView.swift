@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Capture a clear frontal face for 1:1 references and search-library enrollment.
 /// 清晰正脸采集；用于 1:1 参考身份和搜索库录入。
 struct FaceCaptureView: View {
     @ObservedObject var model: CameraDemoModel
@@ -13,6 +14,8 @@ struct FaceCaptureView: View {
     var body: some View {
         ZStack {
             FaceCaptureCameraView(model: model, onClose: onClose)
+                // The keyboard adjusts only the confirmation card; keep the camera fullscreen so retaking does not
+                // resize it during keyboard dismissal.
                 // 键盘只调整确认框；底层相机始终保持全屏尺寸，避免重新拍摄时随键盘退场缩放。
                 .ignoresSafeArea(.keyboard, edges: .bottom)
                 .allowsHitTesting(model.pendingReferenceFeature == nil)

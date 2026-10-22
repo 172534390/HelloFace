@@ -1,6 +1,10 @@
 import { FaceAction, FaceLivenessConfig } from 'hiface';
 
-/** Android FaceLivenessActivity 的随机动作和静默活体策略。 */
+/**
+ * Random-action and passive-liveness policy matching Android FaceLivenessActivity.
+ *
+ * Android FaceLivenessActivity 的随机动作和静默活体策略。
+ */
 export class FaceLivenessFlow {
   static readonly LIVENESS_ACTION_COUNT: number = 3;
 

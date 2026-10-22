@@ -287,6 +287,7 @@ std::vector<ImageFaceCapture> Client::captureFaces(const Image& image, uint32_t 
     std::vector<HiFaceStatus> statuses(maximum);
     std::vector<float> features(maximum * HIFACE_FACE_FEATURE_DIMENSION);
     // Feature buffers are temporary; the returned successful captures own copies.
+    // 特征缓冲仅临时使用；成功返回的采集结果持有独立副本。
     struct Clear { std::vector<float>& values; ~Clear() { std::fill(values.begin(), values.end(), 0); } } clear{features};
     std::vector<uint8_t> pixels(previews ? maximum * size_t{HIFACE_ALIGNED_PREVIEW_RGBA_BYTES} : 0);
     uint32_t count = 0;

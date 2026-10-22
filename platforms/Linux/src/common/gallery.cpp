@@ -10,6 +10,7 @@ namespace hiface_linux_demo {
 namespace {
 // Small bounded JSON reader for the public HF1 exchange format. It does not
 // implement HF1 or touch the database schema; both remain owned by Core.
+// 用于公开 HF1 交换格式的有界轻量 JSON 读取器；不实现 HF1，也不访问数据库结构，两者仍由 Core 管理。
 class JsonReader {
     const std::string& input_;
     size_t cursor_ = 0;
@@ -128,6 +129,7 @@ public:
             if (input_.compare(cursor_, token.size(), token) == 0) { cursor_ += token.size(); return; }
         }
         // Unknown JSON numeric metadata may be fractional or larger than int64.
+        // 未知 JSON 数值元数据可能带小数或超出 int64 范围。
         const auto begin = cursor_;
         if (input_[cursor_] == '-') ++cursor_;
         require(cursor_ < input_.size(), "Truncated JSON number");
@@ -250,6 +252,7 @@ std::vector<GalleryEntry> readFeatureFile(const std::string& path) {
 
 void exportFeatureFile(Database& db, const std::string& path, const std::string& group, const std::string& tag) {
     // The caller serializes database mutations for a consistent paged export.
+    // 调用方串行修改数据库，以保持分页导出一致。
     std::ostringstream body; uint32_t total = 0;
     for (uint32_t offset = 0;;) {
         const auto rows = listGallery(db, group, tag, offset, 500, true);

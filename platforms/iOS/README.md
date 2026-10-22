@@ -1,19 +1,30 @@
-# HiFace iOS · 0.0.3 Beta
+# HiFace iOS Integration Demo
 
 English | [简体中文](README.zh-CN.md)
 
-iOS 15+, Swift 6.
+SDK: **0.0.4 Beta**
+
+On-device detection, capture, liveness, 1:1 comparison, 1:N/M:N search and face-library management.
+
+**Model scope: The current model does not support face recognition for people under 12 and must not be used in financial scenarios.**
+
+## Run
 
 1. Open `HiFaceDemo.xcodeproj` in Xcode and select `HiFaceDemo`.
-2. Set your Team and Bundle ID; run on iPhone and grant camera access.
+2. Set your Team and bundle ID in Signing & Capabilities.
+3. Run on an iOS 15+ iPhone and allow camera access.
 
-## Integrate
+Simulators and My Mac support UI/build checks. Validate camera behavior and performance on iPhone.
 
-Add `SDK/` as a local Swift package, select `HiFace`, and retain both HiFace and HiFaceNative binary targets.
-Use `HiFaceSDK()` with default configuration and add `NSCameraUsageDescription` to your App Info.plist. See the [API guide](SDK/API.md).
+## Project
 
-Examples: [camera](HiFaceDemo/Camera/CameraPipeline.swift) · [flows](HiFaceDemo/Camera/CameraDemoModel.swift) · [face library](HiFaceDemo/Search/SearchLibraryView.swift).
-Demo data: `HiFaceDemo/Resources/FaceSearch/`; image downloads require internet. The 1:1 reference uses Keychain. HF1 and the SDK face database are unencrypted.
+| Path | Purpose |
+|---|---|
+| `HiFaceDemo/` | Editable SwiftUI / AVFoundation examples |
+| `SDK/` | Binary SPM; retain both HiFace and HiFaceNative targets |
 
-The SDK is in iterative public Beta testing. Please keep the SDK version up to date. The current model does not support face recognition for people under 12 and must not be used in financial scenarios. Validate camera features on iPhone.
-Face search requires clear camera images; outdoor deployments require a camera with a wide dynamic range greater than 100 dB.
+Use `HiFaceSDK()` with its default model bundle. Add `NSCameraUsageDescription` to your App Info.plist.
+
+Guides: [SDK](SDK/README.md) · [Demo](DEMO.md).
+
+The SDK is in iterative public Beta testing. Please keep the SDK version up to date. [Updates](https://github.com/FaceSDKPro/).

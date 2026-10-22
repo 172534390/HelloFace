@@ -21,7 +21,12 @@ import com.hiface.sdk.demo.ui.OutlinedOverlayText;
 import java.util.Collections;
 import java.util.List;
 
-/** 检测结果到预览的绘制适配器；仅在主线程更新，复用绘制缓冲以减少逐帧分配。 */
+/**
+ * Map detection output into the preview on the main thread; reuse drawing buffers to reduce per-frame
+ * allocation.
+ *
+ * 检测结果到预览的绘制适配器；仅在主线程更新，复用绘制缓冲以减少逐帧分配。
+ */
 public final class FaceDetectionOverlayView extends View {
     private static final float EYE_CONTOUR_SCALE = 1.4f;
     private static final float FACE_BOX_WIDTH_DP = 2.0f;
@@ -51,6 +56,7 @@ public final class FaceDetectionOverlayView extends View {
     @NonNull
     private List<DetectedFace> faces = Collections.emptyList();
 
+    // Draw only lips, eyes, the face outline, and nose; explicitly exclude both eyebrow connection sets.
     // 只绘制嘴唇、双眼、脸部外轮廓和鼻部，明确排除两组眉毛连接。
     private static final int[][] FACE_CONTOUR_CONNECTION_GROUPS = {new int[]{61, 146, 146, 91, 91, 181, 181, 84, 84, 17, 17, 314, 314, 405, 405, 321, 321, 375, 375, 291, 61, 185, 185, 40, 40, 39, 39, 37, 37, 0, 0, 267, 267, 269, 269, 270, 270, 409, 409, 291, 78, 95, 95, 88, 88, 178, 178, 87, 87, 14, 14, 317, 317, 402, 402, 318, 318, 324, 324, 308, 78, 191, 191, 80, 80, 81, 81, 82, 82, 13, 13, 312, 312, 311, 311, 310, 310, 415, 415, 308}, new int[]{263, 249, 249, 390, 390, 373, 373, 374, 374, 380, 380, 381, 381, 382, 382, 362, 263, 466, 466, 388, 388, 387, 387, 386, 386, 385, 385, 384, 384, 398, 398, 362}, new int[]{33, 7, 7, 163, 163, 144, 144, 145, 145, 153, 153, 154, 154, 155, 155, 133, 33, 246, 246, 161, 161, 160, 160, 159, 159, 158, 158, 157, 157, 173, 173, 133}, new int[]{10, 338, 338, 297, 297, 332, 332, 284, 284, 251, 251, 389, 389, 356, 356, 454, 454, 323, 323, 361, 361, 288, 288, 397, 397, 365, 365, 379, 379, 378, 378, 400, 400, 377, 377, 152, 152, 148, 148, 176, 176, 149, 149, 150, 150, 136, 136, 172, 172, 58, 58, 132, 132, 93, 93, 234, 234, 127, 127, 162, 162, 21, 21, 54, 54, 103, 103, 67, 67, 109, 109, 10}, new int[]{168, 6, 6, 197, 197, 195, 195, 5, 5, 4, 4, 1, 1, 19, 19, 94, 94, 2, 98, 97, 97, 2, 2, 326, 326, 327}};
 
@@ -97,7 +103,12 @@ public final class FaceDetectionOverlayView extends View {
                 getResources().getDisplayMetrics());
     }
 
-    /** 将轮廓索引展开到复用的 drawLines 缓冲区；双眼轮廓适当放大以便观察。 */
+    /**
+     * Expand contour indices into a reusable drawLines buffer; slightly enlarge eye contours for
+     * visibility.
+     *
+     * 将轮廓索引展开到复用的 drawLines 缓冲区；双眼轮廓适当放大以便观察。
+     */
     private int buildMeshContourLineBuffer(int meshPointCount) {
         int outputOffset = 0;
         for (int groupIndex = 0;
@@ -157,7 +168,12 @@ public final class FaceDetectionOverlayView extends View {
         return outputOffset;
     }
 
-    /** 检测和搜索共用 CameraX 坐标变换；文字单独绘制，不随坐标镜像。 */
+    /**
+     * Detection and search share the CameraX coordinate transform; draw text separately so it is not
+     * mirrored.
+     *
+     * 检测和搜索共用 CameraX 坐标变换；文字单独绘制，不随坐标镜像。
+     */
     @MainThread
     public void updateFaces(
             @NonNull FaceDetectionResult frameResult,
@@ -196,6 +212,10 @@ public final class FaceDetectionOverlayView extends View {
     }
 
     /**
+     * Draw a face in this order: expanded box, information label, selected contours, and five landmarks.
+     * Map DetectedFace coordinates from the rotated detection image into preview coordinates with matrix.
+     * canvas is the View canvas; face is one immutable result from this frame.
+     *
      * 按“扩展检测框 → 信息标签 → 局部轮廓 → 五点”的顺序绘制一张人脸。
      * {@link DetectedFace} 中的坐标属于旋转后的检测图，绘制前统一通过 {@link #matrix} 映射到
      * 预览坐标。
@@ -204,6 +224,8 @@ public final class FaceDetectionOverlayView extends View {
      * @param face 当前帧的一张不可变人脸结果
      */
     private void drawFace(@NonNull Canvas canvas, @NonNull DetectedFace face) {
+        // 1. Expand the detection box 1.2 times around its center, then map it into the preview; reuse it for
+        // label placement.
         // 1. 以检测框中心为基准放大到 1.2 倍，再映射到预览坐标；结果同时供标签定位使用。
         float horizontalExpansion = face.getWidth() * (1.2f - 1.0f) * 0.5f;
         float verticalExpansion = face.getHeight() * (1.1f - 1.0f) * 0.5f;
@@ -215,14 +237,19 @@ public final class FaceDetectionOverlayView extends View {
         matrix.mapRect(faceRect);
         canvas.drawRect(faceRect, faceBoxPaint);
 
+        // 2. Draw confidence above the face box and append pitch/yaw/roll when head pose is available.
         // 2. 在人脸框上方绘制置信度；有头姿结果时追加 pitch/yaw/roll。
         drawFaceLabel(canvas, face);
 
+        // 3. Draw eyes, nose, mouth, and the face outline when 468 points are valid; eyebrow connections are
+        // excluded.
         // 3. 468 点有效时绘制双眼、鼻、嘴和脸部外轮廓；眉毛连接已从索引表排除。
         if (face.getMesh() != null) {
             drawMesh(canvas, face.getMesh());
         }
 
+        // 4. Draw the detector's five landmarks last so eyes, nose, and mouth corners remain visible above the
+        // contours.
         // 4. 最后覆盖绘制检测模型的五点，使眼、鼻、嘴角位置在轮廓之上保持清晰。
         drawLandmarks(canvas, face.getLandmarks());
     }
@@ -243,7 +270,11 @@ public final class FaceDetectionOverlayView extends View {
         drawLabel(canvas, faceLabelBuilder.toString(), faceRect.left, baseline);
     }
 
-    /** 批量映射并绘制选定轮廓，避免逐点创建 PointF 或 Path。 */
+    /**
+     * Transform and draw selected contours in batches without allocating a PointF or Path for each point.
+     *
+     * 批量映射并绘制选定轮廓，避免逐点创建 PointF 或 Path。
+     */
     private void drawMesh(@NonNull Canvas canvas, @NonNull DetectedFace.FaceMesh mesh) {
         int pointCount = mesh.getPointCount();
         mesh.copyInterleavedTo(meshPointBuffer);

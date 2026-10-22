@@ -1,7 +1,12 @@
 import { common } from '@kit.AbilityKit';
 import { window } from '@kit.ArkUI';
 
-/** 非搜索相机页每次进入前台设为 90% 亮度，离开前台时恢复当次进入前的窗口值。 */
+/**
+ * Non-search camera screens use 90% brightness on each foreground entry and restore that entry's
+ * previous window value on exit.
+ *
+ * 非搜索相机页每次进入前台设为 90% 亮度，离开前台时恢复当次进入前的窗口值。
+ */
 export class CameraScreenPresentation {
   private static readonly ACTIVE_BRIGHTNESS: number = 0.90;
   private operation: Promise<void> = Promise.resolve();

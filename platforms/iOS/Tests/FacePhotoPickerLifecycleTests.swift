@@ -1,5 +1,7 @@
 import Foundation
 
+// Replace only UIKit/PhotosUI boundaries and run the real Coordinator's asynchronous
+// delivery/cancellation logic.
 // 仅替换 UIKit/PhotosUI 边界，运行真实 Coordinator 的异步交付与取消逻辑。
 @MainActor protocol UIViewControllerRepresentable {
     typealias Context = PhotoPickerContext

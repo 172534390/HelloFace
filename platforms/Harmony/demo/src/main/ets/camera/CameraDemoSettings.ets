@@ -6,7 +6,11 @@ const STORE_NAME: string = 'hiface_camera_settings';
 const HIGH_RESOLUTION_KEY: string = 'high_resolution';
 const MIRROR_COORDINATES_KEY: string = 'mirror_coordinates';
 
-/** Demo 宿主相机偏好，不属于 HiFace HAR 的推理配置。 */
+/**
+ * Demo host camera preferences, separate from inference configuration in the HiFace HAR.
+ *
+ * Demo 宿主相机偏好，不属于 HiFace HAR 的推理配置。
+ */
 export class CameraDemoSettings {
   readonly highResolution: boolean;
   readonly mirrorCoordinates: boolean;
@@ -21,7 +25,11 @@ export class CameraDemoSettings {
   }
 }
 
-/** 使用应用 Preferences 持久化；两个字段始终作为同一快照写入并 flush。 */
+/**
+ * Persist through app Preferences; always write and flush both fields as one snapshot.
+ *
+ * 使用应用 Preferences 持久化；两个字段始终作为同一快照写入并 flush。
+ */
 export class CameraDemoSettingsStore {
   static async load(context: common.UIAbilityContext): Promise<CameraDemoSettings> {
     try {

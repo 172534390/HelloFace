@@ -26,6 +26,9 @@ import com.hiface.sdk.demo.ui.DemoErrorUi;
 import com.hiface.sdk.flow.FaceFlowProgress;
 
 /**
+ * Face-capture Demo: the adapter owns the camera; the SDK owns model threading, capture state, and
+ * exit races.
+ *
  * 人脸采集演示页：相机由 Demo 适配层管理，模型线程、采集状态机及退出竞态由 SDK 负责。
  */
 public final class FaceEnrollmentActivity extends CameraFlowActivity {
@@ -41,7 +44,11 @@ public final class FaceEnrollmentActivity extends CameraFlowActivity {
         initializeCameraSdk();
     }
 
-    /** 开始一次 SDK 引导采集；请求完成后，重试时显式启动下一次。 */
+    /**
+     * Start one guided capture request; explicitly start a new request on retry after completion.
+     *
+     * 开始一次 SDK 引导采集；请求完成后，重试时显式启动下一次。
+     */
     @Override
     protected void startCameraFlow() {
         if (!canStartCameraFlow() || confirmationDialog != null) return;
@@ -58,6 +65,8 @@ public final class FaceEnrollmentActivity extends CameraFlowActivity {
             }
 
             /**
+             * Invalid parameters or an underlying SDK failure prevented completion, so no business outcome exists.
+             *
              * 传入参数错误，SDK底层异常导致无法完成这次请求，没有形成业务结论
              */
             @Override
@@ -68,23 +77,38 @@ public final class FaceEnrollmentActivity extends CameraFlowActivity {
         }));
     }
 
-    /** 退出确认态并恢复相机，同时开始下一次单次引导采集。 */
+    /**
+     * Leave confirmation state, resume the camera, and start the next guided capture request.
+     *
+     * 退出确认态并恢复相机，同时开始下一次单次引导采集。
+     */
     private void resumeEnrollmentCapture() {
         dismissConfirmation();
         captureOverlay.setStatusText(R.string.capture_face_guide);
         startCameraFlow();
     }
 
-    /** 从不可变抓拍样本创建确认预览，并切换到录入确认状态。 */
+    /**
+     * Build a confirmation preview from the immutable capture and enter enrollment confirmation state.
+     *
+     * 从不可变抓拍样本创建确认预览，并切换到录入确认状态。
+     */
     private void handleFaceCaptured(@NonNull FaceCaptureResult capture) {
         Bitmap preview = capture.getAlignedFace();
+        // CameraX mirrors front-camera PreviewView like a selfie, while SDK captures remain unmirrored. Mirror
+        // only the confirmation display, preserving Bitmap pixels and face features.
         // CameraX 前摄 PreviewView 默认按自拍镜像显示；SDK 抓拍结果保持未镜像坐标。
         // 仅镜像确认页的显示，使其与实时预览一致，不修改 Bitmap 和人脸特征。
         boolean mirrorForDisplay = cameraPreview.isFrontCamera();
         showConfirmation(capture, preview, mirrorForDisplay);
     }
 
-    /** 展示抓拍结果；确认后只在 Demo 的加密 MMKV 保存 Face ID 与特征字符串。 */
+    /**
+     * Display the capture; after confirmation, save only Face ID and feature text in the Demo's encrypted
+     * MMKV.
+     *
+     * 展示抓拍结果；确认后只在 Demo 的加密 MMKV 保存 Face ID 与特征字符串。
+     */
     private void showConfirmation(
             @NonNull FaceCaptureResult capture,
             @NonNull Bitmap preview,
@@ -153,7 +177,11 @@ public final class FaceEnrollmentActivity extends CameraFlowActivity {
         }
     }
 
-    /** 直接创建的宿主 Dialog 不属于 SDK，由页面统一关闭并触发预览 Bitmap 回收。 */
+    /**
+     * Host-created dialogs are outside the SDK; the screen closes them and releases preview Bitmaps.
+     *
+     * 直接创建的宿主 Dialog 不属于 SDK，由页面统一关闭并触发预览 Bitmap 回收。
+     */
     private void dismissConfirmation() {
         Dialog dialog = confirmationDialog;
         confirmationDialog = null;

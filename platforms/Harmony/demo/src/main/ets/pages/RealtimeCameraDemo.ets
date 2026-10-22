@@ -79,6 +79,11 @@ class OverlayFrameCallback extends FrameCallback {
 }
 
 /**
+ * Shared ArkUI host for Android's real-time Activities. Centralize XComponent, CameraKit
+ * startup/cleanup, and lifecycle here; feature directories retain detection drawing, search
+ * presentation, and verification/liveness configuration. This avoids duplicating asynchronous Surface
+ * cleanup across screens.
+ *
  * Android 各实时 Activity 的共享 ArkUI 宿主。
  *
  * 本组件集中 XComponent、CameraKit 启停和页面生命周期；检测绘制、搜索展示、验证/活体配置仍在
@@ -87,6 +92,8 @@ class OverlayFrameCallback extends FrameCallback {
 @Component
 export struct RealtimeCameraDemo {
   @Require
+  // The SDK is a shared service reference; @Prop deep-copies internal Promises and breaks startup queues
+  // and session state.
   // SDK 是共享服务引用；@Prop 会深拷贝内部 Promise，破坏启停队列和会话状态。
   sdk: HiFaceSdk;
   @Prop initialMode: RealtimeMode = RealtimeMode.DETECTION;
@@ -174,7 +181,12 @@ export struct RealtimeCameraDemo {
   private readonly overlayFrameCallback: FrameCallback =
     new OverlayFrameCallback((): void => this.drawOverlayFrame());
 
-  /** 恢复入口参数并绑定页面生命周期；不在这里启动相机，等待 XComponent Surface 就绪。 */
+  /**
+   * Restore entry arguments and bind lifecycle; wait for the XComponent Surface before starting the
+   * camera.
+   *
+   * 恢复入口参数并绑定页面生命周期；不在这里启动相机，等待 XComponent Surface 就绪。
+   */
   aboutToAppear(): void {
     this.previousKeyboardAvoidMode = this.getUIContext().getKeyboardAvoidMode();
     this.getUIContext().setKeyboardAvoidMode(KeyboardAvoidMode.RESIZE_WITH_CARET);
@@ -200,11 +212,14 @@ export struct RealtimeCameraDemo {
     }
     this.realtimeProcessor = this.sdk.createRealtimeProcessor();
     this.lifecycleBinding = this.cameraLifecycle.bind(() => {
+      // Stop frames and flows first so late callbacks cannot overwrite restored brightness.
       // 先停帧和流程，避免迟到回调覆盖已恢复的亮度。
       this.suspendCamera();
       this.deactivateCameraPresentation();
     }, () => {
       if (!this.visible) return;
+      // On foreground entry, remember the user's current value, apply this camera screen's policy, then
+      // resume the camera.
       // 回到前台时重新记录用户当前值，应用当前相机页显示策略后再恢复相机。
       this.activateCameraPresentation();
       if (this.surfaceAvailable) this.onSurfaceReady();
@@ -220,7 +235,11 @@ export struct RealtimeCameraDemo {
     if (this.cameraLifecycle.isActive()) this.activateCameraPresentation();
   }
 
-  /** 使所有晚到回调失效，再释放流程、PixelMap、数据库和相机。 */
+  /**
+   * Invalidate all late callbacks before releasing flows, PixelMaps, the database, and camera.
+   *
+   * 使所有晚到回调失效，再释放流程、PixelMap、数据库和相机。
+   */
   aboutToDisappear(): void {
     this.cameraLifecycle.unbind(this.lifecycleBinding);
     this.leaveCameraPage();
@@ -243,7 +262,11 @@ export struct RealtimeCameraDemo {
     return this.visible && this.cameraLifecycle.isActive();
   }
 
-  /** 搜索页保留动态亮度，其余相机页每次进入前台固定使用 90% 亮度。 */
+  /**
+   * Search retains dynamic brightness; other camera screens use 90% on each foreground entry.
+   *
+   * 搜索页保留动态亮度，其余相机页每次进入前台固定使用 90% 亮度。
+   */
   private activateCameraPresentation(): void {
     if (!this.isPageActive()) return;
     const context: common.UIAbilityContext =
@@ -267,6 +290,8 @@ export struct RealtimeCameraDemo {
     Stack() {
       Column() {
         Stack({ alignContent: Alignment.TopStart }) {
+          // Match Android PreviewView: search uses FILL_CENTER, other screens FIT_CENTER. Surface and overlay
+          // share the preview center; cropping applies only to search.
           // 对齐 Android PreviewView：搜索使用 FILL_CENTER，其余页面使用 FIT_CENTER。
           // Surface 与 Overlay 都以预览区域中心为原点，裁剪量只在搜索页生效。
           Stack({ alignContent: Alignment.Center }) {
@@ -362,6 +387,8 @@ export struct RealtimeCameraDemo {
           .borderRadius(24).backgroundColor(this.isSearchMode() ? '#D9172233' : this.isGuidedMode() || label === DemoL10n.text("切换摄像头") ?
             Color.Transparent : DemoTheme.surfaceOnDark)
         if (this.isSearchMode()) {
+          // Search SVGs already have Android-style white outlines; fillColor would incorrectly fill the camera's
+          // closed outline.
           // 搜索页 SVG 已使用与 Android 一致的白色描边；fillColor 会把相机闭合外框误填成色块。
           Image(icon).width(20).height(20)
         } else {
@@ -374,7 +401,12 @@ export struct RealtimeCameraDemo {
       (!this.switchingCamera && (label !== DemoL10n.text("切换摄像头") || this.cameraReady))).onClick(action)
   }
 
-  /** 与 Android 搜索页按钮保持一致：48dp 高、20dp 图标、13sp 中字重，并关闭平台默认内容边距。 */
+  /**
+   * Match Android search buttons: 48 dp height, 20 dp icons, 13 sp medium-weight text, and no default
+   * platform content padding.
+   *
+   * 与 Android 搜索页按钮保持一致：48dp 高、20dp 图标、13sp 中字重，并关闭平台默认内容边距。
+   */
   @Builder
   private SearchActionButton(icon: Resource, label: string, primary: boolean, action: () => void) {
     Button({ type: ButtonType.Normal }) {
@@ -498,6 +530,10 @@ export struct RealtimeCameraDemo {
   }
 
   /**
+   * When Surface becomes ready, stop the old session, read host settings, create the controller, and
+   * start. cameraSurfaceGeneration isolates old callbacks from navigation, camera switches, and profile
+   * fallback.
+   *
    * Surface 可用后按“停止旧会话 → 读取宿主设置 → 创建控制器 → 启动”的顺序重建相机。
    * cameraSurfaceGeneration 隔离切页、切摄和规格回退产生的旧回调。
    */
@@ -579,6 +615,8 @@ export struct RealtimeCameraDemo {
         this.resetRealtimeState();
       }
     );
+    // Target 15 FPS for active search and 5 FPS for idle, requesting both preview and analysis rates;
+    // hardware may fall back.
     // 搜索活跃目标 15 FPS、待机目标 5 FPS，同时请求预览和分析输出；硬件可能回退。
     const sessionFps: number = this.isSearchMode() ?
       SEARCH_ACTIVE_FPS :
@@ -597,7 +635,12 @@ export struct RealtimeCameraDemo {
     this.suspendCamera();
   }
 
-  /** 页面隐藏或 Surface 销毁时立即停帧；结果/确认弹窗状态保留到恢复后。 */
+  /**
+   * Stop frames immediately when hidden or Surface is destroyed; preserve result/confirmation dialogs
+   * until resume.
+   *
+   * 页面隐藏或 Surface 销毁时立即停帧；结果/确认弹窗状态保留到恢复后。
+   */
   private suspendCamera(): void {
     this.libraryGeneration += 1;
     if (this.isSearchEnrollment()) this.libraryBusy = false;
@@ -615,7 +658,12 @@ export struct RealtimeCameraDemo {
     controller?.stop();
   }
 
-  /** 活体切摄保留当前挑战，其余模式重建业务请求，防止旧镜头帧推进新流程。 */
+  /**
+   * Switching cameras during liveness retains the challenge; other modes rebuild requests so old-camera
+   * frames cannot advance a new flow.
+   *
+   * 活体切摄保留当前挑战，其余模式重建业务请求，防止旧镜头帧推进新流程。
+   */
   private async switchCamera(): Promise<void> {
     if (this.switchingCamera || !this.cameraReady || this.cameraController === undefined ||
       !this.isPageActive()) return;
@@ -627,6 +675,7 @@ export struct RealtimeCameraDemo {
     this.switchingCamera = true;
     this.cameraReady = false;
     if (preserveSearch) {
+      // Invalidate old samples on camera switch while reusing the search connection for the new camera.
       // 切镜头作废旧采样，保留搜索连接供新镜头复用。
       this.cameraController.pauseAnalysis();
       this.activeSearchSession?.pause();
@@ -658,7 +707,12 @@ export struct RealtimeCameraDemo {
     }
   }
 
-  /** 所有实时模式的唯一送帧入口；处理器忙时丢弃当前帧，不在 UI 线程积压任务。 */
+  /**
+   * One frame-delivery entry point for all real-time modes; drop frames while the processor is busy
+   * instead of building a UI-thread queue.
+   *
+   * 所有实时模式的唯一送帧入口；处理器忙时丢弃当前帧，不在 UI 线程积压任务。
+   */
   private async processFrame(frame: Yuv420Frame): Promise<void> {
     const generation: number = this.flowGeneration;
     const surfaceGeneration: number = this.cameraSurfaceGeneration;
@@ -734,7 +788,11 @@ export struct RealtimeCameraDemo {
     this.resultState = DemoL10n.text("正在准备相机…");
   }
 
-  /** 相机就绪后按首页选定模式启动唯一业务流程。 */
+  /**
+   * Start the single business flow selected on the home screen after camera readiness.
+   *
+   * 相机就绪后按首页选定模式启动唯一业务流程。
+   */
   private startSelectedFlow(): void {
     if (!this.isPageActive() || this.flowBusy || this.flowActive) return;
     if (this.isSearchMode() && this.lastSearchError !== undefined &&
@@ -835,7 +893,12 @@ export struct RealtimeCameraDemo {
       DemoL10n.text("平视正对摄像头"), RealtimeMode.LIVENESS, generation);
   }
 
-  /** 优先恢复已有会话，保留模型和数据库；相机就绪由平台控制器负责。 */
+  /**
+   * Prefer resuming the existing session to retain models and the database; the platform controller owns
+   * camera readiness.
+   *
+   * 优先恢复已有会话，保留模型和数据库；相机就绪由平台控制器负责。
+   */
   private resumeSearch(): void {
     if (!this.isPageActive() || !this.cameraReady || this.flowBusy) return;
     if (this.lastSearchError !== undefined && !FaceSearchStatusUi.canResumeSearch(this.lastSearchError)) return;
@@ -909,6 +972,8 @@ export struct RealtimeCameraDemo {
 
   private onSearchFrame(frame: FaceSearchFrame, generation: number): void {
     if (!this.visible || generation !== this.flowGeneration) return;
+    // Progress is deduplicated; synchronize face state every frame so stale state cannot block idle
+    // timing.
     // 进度会去重，逐帧同步人脸状态，避免旧状态阻止待机计时。
     this.searchScreenPresentation.updateFacePresence(frame.faces.length > 0);
     const acceptedAt: number = this.monotonicMillis();
@@ -996,7 +1061,11 @@ export struct RealtimeCameraDemo {
     }
   }
 
-  /** 串行等待 SDK 启动；页面已退出时立即取消晚到的成功句柄。 */
+  /**
+   * Serialize SDK startup; immediately cancel a successful handle arriving after screen exit.
+   *
+   * 串行等待 SDK 启动；页面已退出时立即取消晚到的成功句柄。
+   */
   private async awaitFlowStart(start: () => Promise<HiFaceResult<FaceRequest>>, readyGuide: string,
     mode: RealtimeMode, generation: number): Promise<void> {
     try {
@@ -1102,6 +1171,8 @@ export struct RealtimeCameraDemo {
     } else if (mode === RealtimeMode.VERIFICATION) {
       this.guideState = result.isPassed() ? DemoL10n.text("1:1 验证通过") : DemoL10n.text("1:1 验证未通过");
       const outcomeMessage: string = `Face ID：${this.referenceFaceId}\n${FaceFlowUi.outcomeTitle(result.outcome)}`;
+      // There is no similarity before identity comparison completes; show only Face ID and the outcome
+      // reason, not a fabricated zero.
       // 未完成身份比对时没有相似度，只展示 Face ID 和结果原因，不能当作 0 分展示。
       const similarity: number | undefined = result.similarity;
       this.resultState = similarity === undefined
@@ -1113,6 +1184,8 @@ export struct RealtimeCameraDemo {
       const outcomeMessage: string = result.isPassed()
         ? DemoL10n.text("活体检测通过")
         : DemoL10n.text("活体检测未通过：{0}", [String(FaceFlowUi.outcomeTitle(result.outcome))]);
+      // Passing or spoof-detected results contain a score; early action timeout or face loss shows only the
+      // reason. undefined means passive liveness produced no score, not zero.
       // 通过或检测到非真人时已产生分数；动作超时、丢脸等提前结束时只展示结果原因。
       // undefined 表示未产生静默活体分数，不能当作 0 分展示。
       const livenessScore: number | undefined = result.livenessScore;
@@ -1151,6 +1224,8 @@ export struct RealtimeCameraDemo {
       } else if (this.isPageActive()) {
         this.onExit();
       } else {
+        // Let confirmed secure writes finish; do not navigate in the background, and show the saved result
+        // after resume.
         // 已确认的安全写入自然完成；后台不触发导航，恢复后展示保存结果。
         this.captureAwaitingConfirmation = false;
         this.pendingReferenceFeature = undefined;
@@ -1317,7 +1392,11 @@ export struct RealtimeCameraDemo {
     this.drawOverlay();
   }
 
-  /** 幂等结束流程，并作废在途回调。 */
+  /**
+   * Finish the flow idempotently and invalidate in-flight callbacks.
+   *
+   * 幂等结束流程，并作废在途回调。
+   */
   private cancelFlow(): void {
     this.resetCountdown();
     this.clearSearchOverlayExpiry();
@@ -1332,7 +1411,12 @@ export struct RealtimeCameraDemo {
     this.searchOverlayState.clear();
   }
 
-  /** 生成确认预览；新采集失败时可保留上一份待确认样本，PixelMap 所有权始终显式释放。 */
+  /**
+   * Create a confirmation preview; a failed new capture may retain the previous pending sample, with
+   * explicit PixelMap ownership and cleanup.
+   *
+   * 生成确认预览；新采集失败时可保留上一份待确认样本，PixelMap 所有权始终显式释放。
+   */
   private async stageEnrollmentCandidate(feature: string, rgba: ArrayBuffer, side: number,
     flowGeneration: number, captureGeneration: number, retainedCandidate: boolean,
     mirrored: boolean): Promise<void> {
@@ -1418,6 +1502,8 @@ export struct RealtimeCameraDemo {
   private searchConfig(mode: FaceSearchMode): FaceSearchSessionConfig {
     const config: FaceSearchSessionConfig = this.searchConfiguration;
     if (config.mode === mode) return config;
+    // Reuse other settings when changing modes; clamp the C ABI float upper boundary into the
+    // constructor's valid input range.
     // 切模式时复用其余配置；C ABI float 的上边界需夹回构造器的有效输入范围。
     return new FaceSearchSessionConfig(mode, config.group, config.tag,
       mode === FaceSearchMode.SINGLE_FACE && config.needsLiveness,
@@ -1441,6 +1527,7 @@ export struct RealtimeCameraDemo {
       this.resumeSearch();
       this.searchPausedForSettings = false;
     } else if (this.cameraReady && !this.flowBusy && !this.flowActive) {
+      // Backgrounding closes the old session, so returning and cancelling a draft must also resume search.
       // 后台会关闭旧会话，返回后取消草稿也需恢复搜索。
       this.startSelectedFlow();
     }
@@ -1484,6 +1571,7 @@ export struct RealtimeCameraDemo {
       const mode: FaceSearchMode = this.currentMode === RealtimeMode.SEARCH_MULTI ?
         FaceSearchMode.MULTI_FACE : FaceSearchMode.SINGLE_FACE;
       session.setConfig(this.searchConfig(mode));
+      // While paused, setConfig only stores configuration; explicitly resume a valid session.
       // 暂停时 setConfig 只保存配置，需要显式恢复有效会话。
       if (this.lastSearchError !== undefined && !FaceSearchStatusUi.canResumeSearch(this.lastSearchError)) {
         this.onSearchError(this.lastSearchError, this.flowGeneration);
@@ -1580,7 +1668,12 @@ export struct RealtimeCameraDemo {
     this.searchOverlayExpirySchedule.clear();
   }
 
-  /** 合并同一 UI 帧内的多次绘制请求，避免每个检测/搜索回调都立即重绘 Canvas。 */
+  /**
+   * Coalesce drawing requests within one UI frame instead of immediately redrawing Canvas for each
+   * detection/search callback.
+   *
+   * 合并同一 UI 帧内的多次绘制请求，避免每个检测/搜索回调都立即重绘 Canvas。
+   */
   private drawOverlay(): void {
     if (this.overlayFramePending) return;
     this.overlayFramePending = true;

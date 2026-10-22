@@ -228,6 +228,8 @@ public final class FaceSearchOverlayStateTest {
     private static FaceSearchOverlayState newState() {
         return new FaceSearchOverlayState("相似度", "活体", "活体未通过", "未匹配");
     }
+    // Existing geometric-association regressions use confirmed matches; new tests cover onFrame/onResult
+    // interleaving separately.
     // 原有几何关联回归使用已确认的匹配；新测试单独覆盖 onFrame/onResult 的交错。
     private static void show(FaceSearchOverlayState state, FaceSearchFrame frame, long now) {
         state.accept(frame, now);

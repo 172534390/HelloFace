@@ -13,8 +13,8 @@ void Scene::box(Rect bounds, uint32_t color, int radius) { Draw d; d.kind = Draw
 void Scene::text(int x, int y, std::string value, uint32_t color, Font font, int width) {
     Draw d; d.kind = Draw::Text; d.bounds = {x, y, width, 0}; d.clip = clip; d.text = std::move(value); d.color = color; d.font = font; d.text_width = width; draws.push_back(std::move(d));
 }
-void Scene::image(Rect bounds, const uint8_t* pixels, int width, int height, bool mirror) {
-    Draw d; d.kind = Draw::Image; d.bounds = bounds; d.clip = clip; d.pixels = pixels; d.source_width = width; d.source_height = height; d.mirror = mirror; draws.push_back(std::move(d));
+void Scene::image(Rect bounds, const uint8_t* pixels, int width, int height, bool mirror, bool x11_bgrx) {
+    Draw d; d.kind = Draw::Image; d.bounds = bounds; d.clip = clip; d.pixels = pixels; d.source_width = width; d.source_height = height; d.mirror = mirror; d.x11_bgrx = x11_bgrx; draws.push_back(std::move(d));
 }
 namespace {
 std::string escape(const std::string& text) {
@@ -34,7 +34,15 @@ void chunk(std::vector<uint8_t>& out, const char* type, const std::vector<uint8_
 }
 std::string png(const Draw& d) {
     std::vector<uint8_t> raw;
-    for (int y = 0; y < d.source_height; ++y) { raw.push_back(0); const auto* row = d.pixels + size_t(y) * d.source_width * 4; raw.insert(raw.end(), row, row + size_t(d.source_width) * 4); }
+    for (int y = 0; y < d.source_height; ++y) {
+        raw.push_back(0);
+        const auto* row = d.pixels + size_t(y) * d.source_width * 4;
+        if (!d.x11_bgrx) raw.insert(raw.end(), row, row + size_t(d.source_width) * 4);
+        else for (int x = 0; x < d.source_width; ++x) {
+            const auto* pixel = row + size_t(x) * 4;
+            raw.insert(raw.end(), {pixel[2], pixel[1], pixel[0], uint8_t(255)});
+        }
+    }
     std::vector<uint8_t> compressed{0x78, 0x01};
     for (size_t offset = 0; offset < raw.size();) {
         const size_t length = std::min<size_t>(65535, raw.size() - offset);
@@ -63,7 +71,7 @@ void writeSceneSvg(const Scene& scene, const std::string& file) {
         const auto r = d.bounds, c = d.clip;
         out << "<defs><clipPath id=\"c" << index << "\"><rect x=\"" << c.x << "\" y=\"" << c.y << "\" width=\"" << c.w << "\" height=\"" << c.h << "\"/></clipPath></defs><g clip-path=\"url(#c" << index++ << ")\">";
         if (d.kind == Draw::Box) out << "<rect x=\"" << r.x << "\" y=\"" << r.y << "\" width=\"" << std::max(0, r.w) << "\" height=\"" << std::max(0, r.h) << "\" rx=\"" << d.radius << "\" fill=\"" << color(d.color) << "\"/>";
-        else if (d.kind == Draw::Text && !d.text.empty()) out << "<text x=\"" << r.x << "\" y=\"" << r.y << "\" font-family=\"Arial, sans-serif\" font-size=\"" << (d.font == Font::Title ? 22 : d.font == Font::Small ? 12 : 14) << "\" fill=\"" << color(d.color) << "\" textLength=\"" << d.text_width << "\" lengthAdjust=\"spacingAndGlyphs\">" << escape(d.text) << "</text>";
+        else if (d.kind == Draw::Text && !d.text.empty()) out << "<text x=\"" << r.x << "\" y=\"" << r.y << "\" font-family=\"Arial, sans-serif\" font-size=\"" << (d.font == Font::Title ? 22 : d.font == Font::Large ? 18 : d.font == Font::Small ? 12 : 14) << "\" fill=\"" << color(d.color) << "\" textLength=\"" << d.text_width << "\" lengthAdjust=\"spacingAndGlyphs\">" << escape(d.text) << "</text>";
         else if (d.kind == Draw::Image && d.pixels) {
             if (d.mirror) out << "<g transform=\"translate(" << 2 * r.x + r.w << " 0) scale(-1 1)\">";
             out << "<image x=\"" << r.x << "\" y=\"" << r.y << "\" width=\"" << r.w << "\" height=\"" << r.h << "\" preserveAspectRatio=\"none\" xlink:href=\"data:image/png;base64," << png(d) << "\"/>";

@@ -1,8 +1,11 @@
 import CoreGraphics
 import SwiftUI
 
+/// Shared detection/search display-box rules preserve original SDK face coordinates.
 /// 检测和搜索 Overlay 共用的显示框规则，不修改 SDK 返回的原始人脸坐标。
 enum FaceOverlayLayout {
+    /// Match Android Demo: add 10% of original width on each side for total display width 1.2 times the
+    /// original.
     /// 与 Android Demo 一致：左右各增加原框宽度的 10%，总显示宽度为 1.2 倍。
     static let horizontalExpansion: CGFloat = 0.10
 
@@ -11,6 +14,8 @@ enum FaceOverlayLayout {
     }
 }
 
+/// SwiftUI Canvas has no text-stroke mode; draw nearby dark-gray glyphs around central white text to
+/// create a stable rounded outline.
 /// SwiftUI Canvas 没有文字描边模式；围绕中心白字绘制紧邻深灰字形，得到稳定的圆角描边。
 enum OutlinedOverlayText {
     private static let outlineColor = Color(
@@ -38,6 +43,8 @@ enum OutlinedOverlayText {
         anchor: UnitPoint = .bottomLeading
     ) {
         guard !value.isEmpty else { return }
+        // Resolve dark and white glyphs once per label and reuse them for all offsets to avoid repeated
+        // layout.
         // 每个标签只解析一次深色与白色字形；多个偏移复用结果，避免重复排版。
         let outline = context.resolve(Text(value).font(font).foregroundColor(outlineColor))
         let fill = context.resolve(Text(value).font(font).foregroundColor(.white))

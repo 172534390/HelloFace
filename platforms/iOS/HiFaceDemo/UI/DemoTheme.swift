@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Entries and screens share brand colors; icons and interaction details follow iOS conventions.
 /// 入口与页面共用品牌色，图标与交互细节遵循 iOS 习惯。
 enum DemoTheme {
     static let home = Color(red: 60 / 255, green: 7 / 255, blue: 64 / 255)

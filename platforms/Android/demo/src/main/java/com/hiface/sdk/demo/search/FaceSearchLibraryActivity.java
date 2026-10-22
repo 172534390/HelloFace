@@ -29,7 +29,12 @@ import com.hiface.sdk.demo.search.FaceSearchStore.Person;
 import java.util.Collections;
 import java.util.List;
 
-/** 人脸库管理示例：滚动加载、精确查询、批量导入和删除；数据库操作由 Store 串行执行。 */
+/**
+ * Face-library management example with paging, exact lookup, bulk import, and deletion; Store
+ * serializes database operations.
+ *
+ * 人脸库管理示例：滚动加载、精确查询、批量导入和删除；数据库操作由 Store 串行执行。
+ */
 public final class FaceSearchLibraryActivity extends AppCompatActivity {
     private static final int LOAD_SIZE = 100;
     private static final int PREFETCH_REMAINING = 10;
@@ -61,7 +66,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
     private boolean pageStarted;
     private int importSaved;
 
-    /** 创建页面独享的数据库连接和列表，实际读取在页面可见时触发。 */
+    /**
+     * Create a screen-owned connection and list; start reads when the screen becomes visible.
+     *
+     * 创建页面独享的数据库连接和列表，实际读取在页面可见时触发。
+     */
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -70,7 +79,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         bindActions();
     }
 
-    /** 绑定列表和空态控件，删除操作交回页面确认后执行。 */
+    /**
+     * Bind list and empty-state controls; the screen confirms deletion before executing it.
+     *
+     * 绑定列表和空态控件，删除操作交回页面确认后执行。
+     */
     private void bindViews() {
         rows = findViewById(R.id.libraryRows);
         status = findViewById(R.id.libraryStatus);
@@ -89,7 +102,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         rows.setAdapter(adapter);
     }
 
-    /** 绑定功能菜单、精确 ID 查询和距列表末尾 10 条时的下一批预加载。 */
+    /**
+     * Bind the menu, exact-ID lookup, and prefetching when ten items remain before the list end.
+     *
+     * 绑定功能菜单、精确 ID 查询和距列表末尾 10 条时的下一批预加载。
+     */
     private void bindActions() {
         findViewById(R.id.libraryBack).setOnClickListener(v -> requestExit());
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -126,7 +143,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         });
     }
 
-    /** 右上角只保留一个菜单入口，集中展示刷新和两种批量导入示例。 */
+    /**
+     * Keep one top-right menu containing refresh and both bulk-import examples.
+     *
+     * 右上角只保留一个菜单入口，集中展示刷新和两种批量导入示例。
+     */
     private void showMenu(View anchor) {
         PopupMenu popup = new PopupMenu(this, anchor);
         popup.inflate(R.menu.face_search_library);
@@ -148,7 +169,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         popup.show();
     }
 
-    /** 导入通过 saveFeatures 新增或覆盖，开始前明确说明数量、覆盖行为及图片网络要求。 */
+    /**
+     * saveFeatures inserts or replaces records; explain counts, replacement behavior, and network
+     * requirements before import.
+     *
+     * 导入通过 saveFeatures 新增或覆盖，开始前明确说明数量、覆盖行为及图片网络要求。
+     */
     private void confirmImport(boolean images) {
         if (loading) {
             return;
@@ -168,7 +194,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    /** 页面只选择导入类型；JSON 解析、下载、特征提取和分批写库都由 Store 串行完成。 */
+    /**
+     * The screen selects only the import type; Store serializes JSON parsing, download, extraction, and
+     * batched writes.
+     *
+     * 页面只选择导入类型；JSON 解析、下载、特征提取和分批写库都由 Store 串行完成。
+     */
     private void startImport(boolean images) {
         if (store == null) return;
         cancelTask();
@@ -242,14 +273,22 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         }
     }
 
-    /** 清除精确查询并只触发一次首批读取。 */
+    /**
+     * Clear exact lookup and trigger only one initial-page read.
+     *
+     * 清除精确查询并只触发一次首批读取。
+     */
     private void resetSearch() {
         lookupMode = false;
         query.setText("");
         loadFirstPage();
     }
 
-    /** 清空旧列表并从前 100 条重新读取。 */
+    /**
+     * Clear the old list and reload the first 100 records.
+     *
+     * 清空旧列表并从前 100 条重新读取。
+     */
     private void loadFirstPage() {
         if (store == null) return;
         cancelTask();
@@ -264,7 +303,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         loadPage(0);
     }
 
-    /** 第 90、190、290…条进入可见范围时，提前读取下一批 100 条。 */
+    /**
+     * Prefetch the next 100 records when item 90, 190, 290, and so on becomes visible.
+     *
+     * 第 90、190、290…条进入可见范围时，提前读取下一批 100 条。
+     */
     private void loadMoreIfNeeded() {
         if (loading || lookupMode || adapter.getItemCount() == 0 || !canLoadMore) {
             return;
@@ -275,7 +318,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         }
     }
 
-    /** 从指定数据库偏移读取一批；首次替换列表，后续按 ID 合并。 */
+    /**
+     * Read a batch at the requested database offset; replace the first page and merge later pages by ID.
+     *
+     * 从指定数据库偏移读取一批；首次替换列表，后续按 ID 合并。
+     */
     private void loadPage(int start) {
         int requestId = generation;
         showLoading(start == 0);
@@ -292,7 +339,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         });
     }
 
-    /** 合并 Adapter 已提交的快照，不再维护第二份列表；Diff 完成后才允许继续翻页。 */
+    /**
+     * Merge the Adapter's committed snapshot instead of keeping a second list; wait for Diff completion
+     * before paging again.
+     *
+     * 合并 Adapter 已提交的快照，不再维护第二份列表；Diff 完成后才允许继续翻页。
+     */
     private void showPage(int requestId, int start, FaceSearchStore.Page loaded) {
         List<Person> merged = start == 0 ? loaded.people
                 : FaceSearchStore.mergePeople(adapter.getCurrentList(), loaded.people);
@@ -315,7 +367,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         });
     }
 
-    /** 按完整 faceId 精确查询；空输入返回滚动列表，NOT_FOUND 显示空结果。 */
+    /**
+     * Look up the full faceId exactly; empty input returns to paging, and NOT_FOUND displays an empty
+     * result.
+     *
+     * 按完整 faceId 精确查询；空输入返回滚动列表，NOT_FOUND 显示空结果。
+     */
     private void lookup() {
         if (loading || store == null) {
             return;
@@ -348,7 +405,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         });
     }
 
-    /** 提交单条 ID 查询结果，缺失记录使用专门的未找到提示。 */
+    /**
+     * Submit the single-ID lookup result; use a dedicated not-found message for missing records.
+     *
+     * 提交单条 ID 查询结果，缺失记录使用专门的未找到提示。
+     */
     private void showLookup(int requestId, List<Person> found) {
         adapter.submitList(found, () -> {
             if (requestId != generation) {
@@ -367,7 +428,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         });
     }
 
-    /** 显示待删除的具体 ID，用户确认后才提交删除操作。 */
+    /**
+     * Show the exact ID to be deleted and submit deletion only after user confirmation.
+     *
+     * 显示待删除的具体 ID，用户确认后才提交删除操作。
+     */
     private void confirmDelete(String faceId) {
         if (loading) {
             return;
@@ -387,7 +452,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         confirmation.show();
     }
 
-    /** 串行删除指定 ID，成功后刷新当前查询或从首批重新加载。 */
+    /**
+     * Delete the ID serially, then refresh the current lookup or reload the first page.
+     *
+     * 串行删除指定 ID，成功后刷新当前查询或从首批重新加载。
+     */
     private void delete(String faceId) {
         if (store == null) return;
         cancelTask();
@@ -410,7 +479,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         });
     }
 
-    /** 首次读取显示加载提示；追加读取保留当前条数，避免列表滚动时文案闪烁。 */
+    /**
+     * Show loading for the first read; retain the current count during append reads to avoid flicker while
+     * scrolling.
+     *
+     * 首次读取显示加载提示；追加读取保留当前条数，避免列表滚动时文案闪烁。
+     */
     private void showLoading(boolean initial) {
         loading = true;
         if (initial) {
@@ -419,7 +493,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         updateActions();
     }
 
-    /** 使未完成页面任务及其回调失效；已经提交的数据库批次保持有效。 */
+    /**
+     * Invalidate unfinished screen tasks and callbacks without undoing committed database batches.
+     *
+     * 使未完成页面任务及其回调失效；已经提交的数据库批次保持有效。
+     */
     private void cancelTask() {
         if (pendingTask != null) {
             pendingTask.cancel();
@@ -451,7 +529,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    /** 图片导入结束或页面离开后释放模型；下次导入独立创建，不长期占用搜索页的内存。 */
+    /**
+     * Release models after image import or screen exit; recreate them for the next import instead of
+     * retaining search-screen memory.
+     *
+     * 图片导入结束或页面离开后释放模型；下次导入独立创建，不长期占用搜索页的内存。
+     */
     private void releaseImageSdk() {
         if (imageSdk != null) {
             imageSdk.close();
@@ -459,20 +542,33 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         }
     }
 
-    /** 查询和功能菜单只在没有数据库任务运行时可用。 */
+    /**
+     * Enable lookup and menu actions only while no database task is running.
+     *
+     * 查询和功能菜单只在没有数据库任务运行时可用。
+     */
     private void updateActions() {
         menuButton.setEnabled(!loading);
         queryField.setEnabled(!loading);
     }
 
-    /** 显示空列表的标题与引导，区分空库、未找到和读取失败。 */
+    /**
+     * Show empty-list guidance that distinguishes an empty database, a missing ID, and a read failure.
+     *
+     * 显示空列表的标题与引导，区分空库、未找到和读取失败。
+     */
     private void showEmpty(@StringRes int title, @StringRes int hint) {
         empty.setVisibility(View.VISIBLE);
         emptyTitle.setText(title);
         emptyHint.setText(hint);
     }
 
-    /** 首批失败显示空态；追加失败保留已加载内容，用户可点击刷新重试。 */
+    /**
+     * Show empty state on an initial-read failure; preserve loaded items on an append failure and allow
+     * refresh to retry.
+     *
+     * 首批失败显示空态；追加失败保留已加载内容，用户可点击刷新重试。
+     */
     private void showError(HiFaceError error, boolean initial) {
         loading = false;
         canLoadMore = false;
@@ -485,7 +581,11 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         updateActions();
     }
 
-    /** 返回页面时从首批重新读取，展示其他页面产生的数据库变化。 */
+    /**
+     * Reload the first page on return to show database changes from other screens.
+     *
+     * 返回页面时从首批重新读取，展示其他页面产生的数据库变化。
+     */
     @Override
     protected void onStart() {
         super.onStart();
@@ -509,7 +609,12 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         }
     }
 
-    /** 后台停止新输入，尾批保存结束后释放资源，返回时重读已保存的数据。 */
+    /**
+     * Stop new input in the background, release resources after the final save batch, and reread saved
+     * data on return.
+     *
+     * 后台停止新输入，尾批保存结束后释放资源，返回时重读已保存的数据。
+     */
     @Override
     protected void onStop() {
         generation++;
@@ -533,6 +638,8 @@ public final class FaceSearchLibraryActivity extends AppCompatActivity {
         stoppingImport = false;
         exitAfterImport = false;
         canLoadMore = false;
+        // The next onStart queries again; do not retain list data or screen closures from asynchronous Diff
+        // work in the background.
         // 下一次 onStart 会重新查询；后台不保留列表数据和异步 Diff 的页面闭包。
         adapter.submitList(null);
         super.onStop();

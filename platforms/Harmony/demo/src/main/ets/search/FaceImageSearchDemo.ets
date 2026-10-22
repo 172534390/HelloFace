@@ -12,6 +12,7 @@ import { PixelMapResource } from '../ui/PixelMapResource';
 class ImageSearchFace {
   readonly index: number;
   readonly face: FaceImageCapture;
+  // Format IDs and scores once for reuse by the photo and thumbnails.
   // ID、分数只格式化一次，照片与缩略图直接复用。
   readonly label: string;
   readonly matched: boolean;
@@ -34,6 +35,8 @@ export struct FaceImageSearchDemo {
   @State private processing: boolean = false;
   @State private pickerOpen: boolean = false;
   private visible: boolean = false;
+  // Ignore old asynchronous UI results after exit or image replacement; finally releases PixelMaps
+  // created by old tasks.
   // 页面退出或换图后，旧异步结果不再更新 UI；旧任务创建的 PixelMap 由 finally 释放。
   private generation: number = 0;
   private imageWidth: number = 0;
@@ -191,6 +194,7 @@ export struct FaceImageSearchDemo {
     const scale: number = Math.min(this.canvasWidth / this.imageWidth, this.canvasHeight / this.imageHeight);
     const dx: number = (this.canvasWidth - this.imageWidth * scale) / 2;
     const dy: number = (this.canvasHeight - this.imageHeight * scale) / 2;
+    // Use the original image's ImageFit.Contain scale/padding offsets; labels remain 10 vp.
     // 与原图 ImageFit.Contain 共用同一缩放/留白偏移；标签固定 10vp。
     c.font = '10vp sans-serif';
     this.faces.forEach((result: ImageSearchFace) => {

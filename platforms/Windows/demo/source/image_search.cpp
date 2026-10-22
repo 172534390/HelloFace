@@ -18,7 +18,7 @@ std::optional<ImageSearchResult> resolveImageFaces(const Gallery& database,
             if (!capture.capture) throw std::runtime_error("Successful image face has no feature");
             face.preview = std::move(capture.capture->preview);
             try {
-                auto matches = database.search(capture.capture->text); // Android default config
+                auto matches = database.search(capture.capture->text); // Android default config / 沿用 Android 默认配置。
                 if (matches.empty()) face.label = u8"未匹配";
                 else {
                     face.match = std::move(matches.front()); ++result.matched;

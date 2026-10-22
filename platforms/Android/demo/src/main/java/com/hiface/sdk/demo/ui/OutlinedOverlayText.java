@@ -6,7 +6,12 @@ import android.graphics.Paint;
 
 import androidx.annotation.NonNull;
 
-/** 相机 Overlay 共用的高对比文字：白色字形配深灰圆角描边，不遮挡人脸画面。 */
+/**
+ * Shared high-contrast overlay text: white glyphs with rounded dark-gray outlines, without obscuring
+ * faces.
+ *
+ * 相机 Overlay 共用的高对比文字：白色字形配深灰圆角描边，不遮挡人脸画面。
+ */
 public final class OutlinedOverlayText {
     private static final int OUTLINE_COLOR = Color.argb(235, 24, 24, 24);
 

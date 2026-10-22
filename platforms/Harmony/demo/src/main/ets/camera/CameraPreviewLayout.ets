@@ -5,7 +5,12 @@ export interface CameraPreviewBounds {
   readonly height: number;
 }
 
-/** 与 Android PreviewView 一致：只有实时搜索裁剪填满，其余相机业务完整显示画面。 */
+/**
+ * Match Android PreviewView: crop to fill only for real-time search; other camera flows display the
+ * full image.
+ *
+ * 与 Android PreviewView 一致：只有实时搜索裁剪填满，其余相机业务完整显示画面。
+ */
 export class CameraPreviewLayout {
   static fillsViewport(mode: RealtimeMode): boolean {
     return mode === RealtimeMode.SEARCH_SINGLE || mode === RealtimeMode.SEARCH_MULTI;

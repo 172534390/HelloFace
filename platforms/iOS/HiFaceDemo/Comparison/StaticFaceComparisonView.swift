@@ -58,6 +58,8 @@ struct StaticFaceComparisonView: View {
             .background(Color(uiColor: .systemBackground))
         }
         .tint(DemoTheme.contentAccent)
+        // The home screen uses dark branding; comparison restores light semantic colors so gray text is not
+        // placed on dark-gray cards.
         // 主页使用深色品牌外观；比对页单独恢复浅色语义色，避免灰字落在深灰卡片上。
         .environment(\.colorScheme, .light)
         .preferredColorScheme(.light)

@@ -2,7 +2,12 @@ import { DemoL10n } from './DemoL10n';
 import { HiFaceError, HiFaceErrorCode } from 'hiface';
 import { hilog } from '@kit.PerformanceAnalysisKit';
 
-/** 将稳定 SDK 错误码转成用户提示，同时记录原始错误供开发者诊断。 */
+/**
+ * Map stable SDK error codes to user guidance while recording the original error for developer
+ * diagnosis.
+ *
+ * 将稳定 SDK 错误码转成用户提示，同时记录原始错误供开发者诊断。
+ */
 export class DemoErrorUi {
   static describe(error: HiFaceError): string {
     hilog.error(0xFF00, 'HiFaceDemo', 'SDK error: code=%{public}d message=%{public}s',
@@ -20,7 +25,12 @@ export class DemoErrorUi {
     return DemoL10n.text("人脸服务发生内部错误");
   }
 
-  /** 与 Android Demo 一致：配置、模型、格式和关闭错误需要先修复原因，不显示无效重试。 */
+  /**
+   * Match Android Demo: configuration, model, format, and closed-state errors require fixing the cause,
+   * without ineffective retry.
+   *
+   * 与 Android Demo 一致：配置、模型、格式和关闭错误需要先修复原因，不显示无效重试。
+   */
   static isRetryable(error: HiFaceError): boolean {
     return error.code === HiFaceErrorCode.NOT_READY ||
       error.code === HiFaceErrorCode.IMAGE_NO_FACE ||
@@ -29,7 +39,12 @@ export class DemoErrorUi {
       error.code === HiFaceErrorCode.PROCESSING_FAILED;
   }
 
-  /** 与 Android 一致：引导录入仅对偶发的帧处理失败自动创建下一次请求。 */
+  /**
+   * Match Android: guided enrollment automatically starts another request only for transient frame-
+   * processing failures.
+   *
+   * 与 Android 一致：引导录入仅对偶发的帧处理失败自动创建下一次请求。
+   */
   static shouldRestartCapture(error: HiFaceError): boolean {
     return error.code === HiFaceErrorCode.PROCESSING_FAILED;
   }

@@ -3,6 +3,7 @@
 #include "gallery.h"
 #include "image_search.h"
 #include "settings.h"
+#include "enrollment_draft.h"
 #include <filesystem>
 #include <memory>
 namespace hiface_linux_demo {
@@ -23,6 +24,10 @@ public:
     void applySettings(const DemoSettings& settings);
     const DemoSettings& settings() const { return settings_; }
     void setEnrollment(const std::string& id, const std::string& group, const std::string& tag);
+    void confirmEnrollment(const std::string& id, const std::string& group, const std::string& tag);
+    bool pendingEnrollment() const { return enrollment_.pending(); }
+    uint64_t enrollmentGeneration() const { return enrollment_generation_; }
+    void clearPageResults();
     void imageOperation(const std::string& operation, const std::string& first, const std::string& second,
         const std::string& id, const std::string& group, const std::string& tag);
     void searchPhoto(const std::string& path, const std::function<bool()>& cancelled = {});
@@ -68,6 +73,8 @@ private:
     char mode_ = 'D';
     DemoSettings settings_;
     std::string enrollment_id_, enrollment_group_, enrollment_tag_;
+    EnrollmentDraft enrollment_;
+    uint64_t enrollment_generation_ = 0;
     bool importing_ = false, importing_images_ = false;
     std::string import_group_;
     std::vector<GalleryEntry> import_entries_;

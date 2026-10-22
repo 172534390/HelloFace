@@ -5,6 +5,11 @@ if ($env:OS -ne "Windows_NT") { throw "Windows x64 and Visual Studio 2022 C++ to
 if (-not $BuildDirectory) { $BuildDirectory = Join-Path $PSScriptRoot "build" }
 $BuildDirectory = [IO.Path]::GetFullPath($BuildDirectory)
 $Sdk = Join-Path $PSScriptRoot "sdk"
+foreach ($Forbidden in @("sdk/src", "sdk/models", "sdk/data", "demo/models")) {
+    if (Test-Path -LiteralPath (Join-Path $PSScriptRoot $Forbidden)) {
+        throw "Unexpected private resource in binary SDK distribution: $Forbidden"
+    }
+}
 function Invoke-Checked([string]$Program, [string[]]$Parameters) {
     & $Program @Parameters
     if ($LASTEXITCODE -ne 0) { throw "$Program failed with exit code $LASTEXITCODE" }

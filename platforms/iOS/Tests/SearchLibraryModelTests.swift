@@ -1,5 +1,7 @@
 import Foundation
 
+// Use matching SDK stubs with the real Demo Model to control database-open and import completion
+// ordering.
 // 使用等形 SDK 桩运行真实 Demo Model，主动控制开库和导入的完成顺序。
 struct FaceSearchMetadata: Sendable {
     let faceID: String
@@ -129,6 +131,8 @@ struct FaceSearchDemoImportProgress { let processed: Int; let total: Int; let im
         precondition(!model.isWorking)
         let initialOffsets = await database.offsets
         precondition(initialOffsets == [0])
+        // A row's old display value may contain old metadata; prefetch membership follows Face ID, not
+        // equality of the whole row.
         // 行的旧展示值可以有旧元数据；是否在预加载区由 Face ID 决定，而非整行值相等。
         var staleEntry = FaceSearchEntry(faceID: model.people[90].id)
         staleEntry.tag = "previous metadata"
