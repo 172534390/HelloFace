@@ -1,6 +1,6 @@
 # HelloFace
 
-English | [简体中文](README.zh-CN.md)
+English | [中文](README.zh-CN.md)
 
 **0.0.4 Beta**
 
