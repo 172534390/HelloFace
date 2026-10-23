@@ -33,7 +33,7 @@ cmake --build build --parallel 2
 ```
 
 [image_search.c](../../../examples/image-search/image_search.c) initializes the SDK, captures up to ten faces, queries the database and releases resources.
-Replace `:memory: --blank 256 256` with `/path/to/faces.db image.rgba WIDTH HEIGHT` to search your own pixels.
+Replace `:memory: --blank 256 256` with `/path/to/hiface-search.db image.rgba WIDTH HEIGHT` to search your own pixels.
 Input must be orientation-normalized, tightly packed RGBA8888: even dimensions 2..4096, exactly `WIDTH*HEIGHT*4` bytes.
 JPEG/PNG decoding and camera adapters are demonstrated in the separate Demo.
 

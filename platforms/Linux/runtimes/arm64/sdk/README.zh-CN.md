@@ -34,7 +34,7 @@ cmake --build build --parallel 2
 ```
 
 [image_search.c](../../../examples/image-search/image_search.c) 演示 SDK 初始化、最多十张脸采集、查库及资源释放。
-将 `:memory: --blank 256 256` 替换为 `/path/to/faces.db image.rgba WIDTH HEIGHT` 可搜索自己的图片像素。
+将 `:memory: --blank 256 256` 替换为 `/path/to/hiface-search.db image.rgba WIDTH HEIGHT` 可搜索自己的图片像素。
 输入需已处理方向，紧密排列的 RGBA8888，宽高为 2..4096 的偶数，文件长度恰好为 `WIDTH*HEIGHT*4`。
 JPEG/PNG 解码和摄像头适配见独立 Demo。
 

@@ -31,7 +31,7 @@ foreach ($Role in @("sdk", "demo")) {
                 $TestData = Join-Path $env:TEMP ("HiFace Demo data " + [Guid]::NewGuid().ToString("N"))
                 New-Item -ItemType Directory -Path $TestData | Out-Null
                 try {
-                    $Database = Join-Path $TestData "faces.db"
+                    $Database = Join-Path $TestData "hiface-search.db"
                     $Roundtrip = Join-Path $TestData "roundtrip.db"
                     $Export = Join-Path $TestData "features.json"
                     Invoke-Checked "./hiface_cli.exe" @("import-json", $Database, (Join-Path $PSScriptRoot "demo/data/features_10000.json"))

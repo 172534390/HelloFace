@@ -18,7 +18,7 @@
 - 图片搜索：选照片查看每张人脸的 ID、分数和对齐图；默认全库 Top-1 / 0.80，不执行活体。
   `Ctrl+O` 选图、`F5` 重搜、`Esc` 取消，左右键选择人脸。
 
-数据位于 `%LOCALAPPDATA%\HiFaceDemo`：`faces.db` 为人脸库，`verification.hf1` 为 1:1 基准，`logs/` 为日志与自检报告。
+数据位于 `%LOCALAPPDATA%\HiFaceDemo`：`hiface-search.db` 为人脸库，`verification.hf1` 为 1:1 基准，`logs/` 为日志与自检报告。
 可将环境变量 `HIFACE_DATA_DIR` 设为绝对目录以隔离测试数据；未设置时沿用系统用户目录。
 相机打不开时检查 Windows 桌面相机权限、设备占用和 Media Foundation；缺 DLL 时重新完整解压。
 SDK正在Beta 迭代公测中，请及时升级SDK版本。主流程与界面验收见包内 `Windows真机测试清单.txt`（源码位于 `../package/`）。

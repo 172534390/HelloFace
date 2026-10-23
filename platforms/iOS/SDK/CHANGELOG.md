@@ -2,10 +2,18 @@
 
 发布状态以对应 SPM tag 和 GitHub Release 为准；本文件记录准备交付的版本内容。
 
+## 0.0.5 — Local candidate, not published
+
+- Bound the JDX feature preprocessing configuration to the authenticated BPHFM2 feature container. Existing feature spaces and databases are not automatically relabeled or migrated.
+- Selected the reviewed NCNN A profile on iOS; retained the compile-only arm64 Simulator stub and separate device model resources.
+- Fixed concurrent clock sampling, retained fail-closed runtime checks, and unified the default search database filename.
+- Strengthened final App model integrity, ZIP entry checks and candidate release validation. Target-device acceptance remains separate.
+
 ## 0.0.4
 
 - Added a separate GRAY8 infrared liveness API with explicit device-calibrated thresholds.
 - Hardened Native runtime checks and release binaries.
+- Replaced the Simulator runtime with an arm64 compile-only stub and removed models, inference dependencies, and Intel `x86_64` support from Simulator slices.
 - Added bilingual Demo comments and synchronized generated English resources.
 - Preserved offline RGB detection, capture, verification and search workflows.
 

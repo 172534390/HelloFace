@@ -1,4 +1,4 @@
-# HiFace 0.0.4 API Guide
+# HiFace 0.0.5 API Guide
 
 English | [简体中文](API.zh-CN.md)
 
@@ -14,7 +14,7 @@ The SDK is in iterative public Beta testing. Please keep the SDK version up to d
 |---|---|
 | iOS | 15 and later |
 | Device | `arm64` |
-| Simulator | `arm64`, `x86_64` |
+| Simulator | `arm64` on Apple Silicon; Intel Mac is unsupported |
 | Entry point | Swift `HiFaceSDK` |
 
 Add the released binary Swift package to Xcode with a fixed version and select the `HiFace` product. Keep both `HiFace` and `HiFaceNative` binary targets. Configure `NSCameraUsageDescription` in the host Info.plist.
@@ -111,7 +111,7 @@ await database.close()
 
 The SDK manages a private Application Support database excluded from cloud backup. Face IDs contain 1–1024 UTF-8 bytes; group/tag allow at most 1024 bytes; NUL is not allowed. Save operations upsert by ID; atomic batches accept 1–1000 entries. Check `contains` before prompting for overwrite.
 
-SQLite stores the original 450-byte Q7 payload. Full record/search/feature-page results return complete HF1 without re-quantization; `entries` and `recentEntries` return metadata only. `updateMetadata` preserves nil fields and clears empty fields. Validate server features using `FaceFeatureFormat.featureSpaceID` (`hiface-feature-new-v1`) and `FaceSearchFeatureEntry`. Compression and iOS file protection are not database encryption.
+SQLite stores the original 450-byte Q7 payload. Full record/search/feature-page results return complete HF1 without re-quantization; `entries` and `recentEntries` return metadata only. `updateMetadata` preserves nil fields and clears empty fields. Validate server features using `FaceFeatureFormat.featureSpaceID` (`jdx-feature-v1`) and `FaceSearchFeatureEntry`. Compression and iOS file protection are not database encryption.
 
 ```swift
 let search = sdk.startCameraSearch(configuration: .default, callbacks: FaceSearchCallbacks(

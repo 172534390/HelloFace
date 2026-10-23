@@ -1,5 +1,5 @@
 {
-  "version": "0.0.4",
+  "version": "0.0.5",
   "status": "beta-candidate",
   "architecture": "x64",
   "compute": "CPU",
@@ -11,7 +11,7 @@
   "sampleData": "none",
   "packageRole": "sdk",
   "layering": "Binary C ABI SDK with built-in encrypted resources; integration adapter belongs to Demo",
-  "candidateId": "0.0.4-beta.6628bb3cad54.a6b2a955",
+  "candidateId": "0.0.5-beta.e317c7a0096a.773266f2",
   "releaseChannel": "beta",
   "proprietaryCoffSymbols": "removed",
   "authenticode": "unsigned"

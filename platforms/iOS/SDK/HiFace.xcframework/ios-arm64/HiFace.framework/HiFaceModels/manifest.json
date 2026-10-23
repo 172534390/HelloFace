@@ -7,15 +7,16 @@
       "bundle": {
         "file": "kcehc.bphfm",
         "bytes": 1273257,
-        "sha256": "de78a0fc762b85773bac90a5dd6441cc5a219fcc6711ab645d8698483762873a"
+        "sha256": "f06a7a9755321257fc654940f33e6eaf66eeff89e20cf8e5d1112e6a21d8f793"
       }
     },
     {
       "model_id": "feature",
       "bundle": {
         "file": "erutaef.bphfm",
-        "bytes": 2426264,
-        "sha256": "81bb7caa4e7566bdcf6ce5a5c18fbfdf5c100cb3186e07f486c9030d20654af3"
+        "bytes": 2426580,
+        "sha256": "f4b945e1420a4ee3740ea8b231dad23a91ce70379e5bbf181bafe4cd0c765528",
+        "format": "BPHFM2"
       }
     },
     {
@@ -23,7 +24,7 @@
       "bundle": {
         "file": "skramdnal.bphfm",
         "bytes": 1233455,
-        "sha256": "2a34c8a278cad6a81ad97211fcc94b4da8633f99390d00897d3f84bce89efe47"
+        "sha256": "6d0b5ff73d3fb9100d0bb89723523f9aed4c0c874f638238b8a748247d16d4a8"
       }
     },
     {
@@ -31,7 +32,7 @@
       "bundle": {
         "file": "s_tnelis.bphfm",
         "bytes": 885053,
-        "sha256": "a686515c38a8cd77cc037dc9134b15b3af1064bcf3951d7d9961e2d97d9ca938"
+        "sha256": "5eebba44a5c7df5ed4bf13d807bf0eed5ea54e9c7a438353f7aa22e32ded0ce0"
       }
     },
     {
@@ -39,15 +40,15 @@
       "bundle": {
         "file": "m_tnelis.bphfm",
         "bytes": 884478,
-        "sha256": "33bc25702d61f15c92005a055a5a2fdaf3117b40575f3651ba1f51705d08b0cc"
+        "sha256": "19feb19d4dcd241b4f45b3b25721a1e244e6e88ee7da56ff0d91e814dec2ef83"
       }
     },
     {
       "model_id": "infrared",
       "bundle": {
         "file": "derarfni.bphfm",
-        "bytes": 1327340,
-        "sha256": "f176797cf892d75e472c813eca63f70a54dbfffdb9046880705a265da3637a8d"
+        "bytes": 666680,
+        "sha256": "284a6f180e31e6fd0fe30d515d15c6977c80c40634ecdccd415b605ce3947c90"
       }
     }
   ]

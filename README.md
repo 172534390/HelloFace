@@ -2,7 +2,7 @@
 
 English | [中文](README.zh-CN.md)
 
-**0.0.4 Beta**
+**0.0.5 Beta**
 
 ### Offline face detection, capture, liveness, 1:1 verification and 1:N/M:N search.
 

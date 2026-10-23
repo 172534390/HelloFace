@@ -1,4 +1,4 @@
-# HiFace 0.0.4 API 指南
+# HiFace 0.0.5 API 指南
 
 [English](API.md) | 简体中文
 
@@ -13,7 +13,7 @@ SDK正在Beta 迭代公测中，请及时升级SDK版本。
 | 项目 | 当前范围 |
 |---|---|
 | 最低系统 | iOS 15 |
-| ABI | 真机 `arm64`；模拟器 `arm64`、`x86_64` |
+| ABI | 真机 `arm64`；Apple Silicon 模拟器 `arm64`（不支持 Intel Mac） |
 | 入口 | Swift `HiFaceSDK` |
 
 业务 App 在 Xcode 添加已发布的二进制 SPM 仓库和固定版本，选择 `HiFace` product；

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22.1)
-project(HiFaceLinuxDemo VERSION 0.0.4 LANGUAGES CXX)
+project(HiFaceLinuxDemo VERSION 0.0.5 LANGUAGES CXX)
 include(GNUInstallDirs)
 set(HIFACE_DEFAULT_SDK "${CMAKE_CURRENT_SOURCE_DIR}/sdk")
 if(NOT EXISTS "${HIFACE_DEFAULT_SDK}" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/runtimes")

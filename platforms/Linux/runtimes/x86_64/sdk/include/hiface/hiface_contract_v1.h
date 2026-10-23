@@ -338,6 +338,6 @@ enum {
 #define HIFACE_FEATURE_TEXT_PREFIX "HF1:"
 
 /* 当前识别模型及五点对齐/归一化契约的兼容标识；不等同于 HF1 序列化格式。 */
-#define HIFACE_FEATURE_SPACE_ID "hiface-feature-new-v1"
+#define HIFACE_FEATURE_SPACE_ID "jdx-feature-v1"
 
 #endif  /* HIFACE_CONTRACT_V1_H */

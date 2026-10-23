@@ -19,8 +19,8 @@ android {
         applicationId = "com.hiface.sdk.public"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 4
-        versionName = "0.0.4"
+        versionCode = 5
+        versionName = "0.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -84,7 +84,7 @@ android {
 }
 
 dependencies {
-    implementation("io.github.facesdkpro:hiface-android:0.0.4")
+    implementation("io.github.facesdkpro:hiface-android:0.0.5")
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.activity)

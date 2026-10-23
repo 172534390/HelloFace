@@ -839,7 +839,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int show) {
     try {
         ComApartment com(true); initializeLog("demo");
         INITCOMMONCONTROLSEX common{sizeof(common), ICC_LISTVIEW_CLASSES | ICC_STANDARD_CLASSES}; InitCommonControlsEx(&common);
-        Ui ui; ui.app.database = demoDataDirectory() / L"faces.db";
+        Ui ui; ui.app.database = demoDataDirectory() / L"hiface-search.db";
         int argc = 0; wchar_t** argv = CommandLineToArgvW(GetCommandLineW(), &argc);
         if (!argv) throw std::runtime_error("Cannot parse command line");
         struct Arguments { wchar_t** values; ~Arguments() { LocalFree(values); } } arguments{argv};
