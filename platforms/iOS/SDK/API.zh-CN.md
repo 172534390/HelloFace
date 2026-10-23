@@ -222,6 +222,3 @@ let result = await sdk.evaluateInfraredLiveness(frame,
 先检查技术错误再读结果。Android 在工作线程同步调用，iOS/鸿蒙使用有界后台队列，输入由 SDK
 持有或复制。此入口不改变既有 RGB 相机活体或搜索流程；iOS 接入前需确认可取得 IR 图像，SDK
 不负责读取 Face ID 内部红外流。
-
-FLIR 官方公布的 99.8% 拦截率 / 97.6% 真人通过率来自私有评测集，不是本 SDK 的目标设备实测；
-强光、3D 头模为已知限制。分发时保留 SDK 许可中的 FLIR MIT 声明，HiFace 自身许可独立。

@@ -4,7 +4,7 @@
   "description": "HiFace HarmonyOS integration demo",
   "main": "",
   "author": "HiFace",
-  "license": "LicenseRef-HiFace-Commercial",
+  "license": "LicenseRef-HiFace-Test-Only",
   "dependencies": {
     "hiface": "file:../libs/hiface-0.0.5.har"
   },

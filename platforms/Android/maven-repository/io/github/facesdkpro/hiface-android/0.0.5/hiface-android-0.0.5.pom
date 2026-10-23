@@ -17,7 +17,7 @@
   <inceptionYear>2026</inceptionYear>
   <licenses>
     <license>
-      <name>Proprietary</name>
+      <name>Hello Face Test Only</name>
       <url>https://github.com/FaceSDKPro/HelloFace/blob/main/platforms/Android/LICENSE</url>
       <distribution>repo</distribution>
     </license>

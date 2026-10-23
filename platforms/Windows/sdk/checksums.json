@@ -2,10 +2,10 @@
   "algorithm": "SHA-256",
   "files": {
     "AI_USAGE_NOTICE.md": "f8521609a2938ce071be93b3b054d2e5e94591f6a8c104f84b16416c6695b4aa",
-    "LICENSE": "d8c2220b11cc2f155b3cb42cf4a1300fa52a299b2c4cecc9cc2d9fe17888527d",
+    "LICENSE": "2ced525016b98a3faa216457a7cd067060034a9e25ef0fb0fcd699f437c65ab6",
     "README.md": "fba6a8149452854efd635b39d1822b54f5abf6732d99735a771cd58ed8cbcac5",
     "README.zh-CN.md": "879547062ff2202e544f6a4d0997d7286aa2fe303d0a6574cebaf093e8fabbcc",
-    "bin/hiface.dll": "e317c7a0096ab661284ec4fc5e1e68365718cdc5366af6690d6605e197e96768",
+    "bin/hiface.dll": "508a77fe048b55c7e090eb48e9cfbac1e70a6413f8dd26c69dfed5ea9ae58969",
     "bin/libc++.dll": "b97586e466fbcbd3f801448802038a4f7550fc7e0381cd873b486cd59fdd2305",
     "bin/libomp.dll": "caa72f2795fd6bf82a137969ce417f8d43e8e88483b13c2e474069616e546bab",
     "bin/libunwind.dll": "0d86a6dfb5a20082b4d74c43a8ce36a30eb2748e4e779c336d174a876ef569c6",
@@ -23,7 +23,7 @@
     "licenses/mingw-w64/COPYING.MinGW-w64.txt": "f38e6194bd3bfa1b654f118e5acefe0aead437bbe669eee43957ccc65a7127f1",
     "licenses/mingw-w64/COPYING.winpthreads.txt": "63263614cdd29f2f93cba85e992f041b31f9fc7b4033692f31269489a8a1b177",
     "licenses/mingw-w64/COPYING.winstorecompat.txt": "fa7368d1f93d890c173177475d8ec7aff265a7d08f1f364d66f74d138978ce36",
-    "sdk-metadata.json": "4dea113747555999c6b0b5b8dc46374d14c52544298a04978e4184360ccdeaa0",
+    "sdk-metadata.json": "69995ccb5201e35073cf862cd90f72bbba15caec672d32e3fa1191cdf1699b0d",
     "share/hiface/exports.txt": "087cfde0c3db491a98eb50c56f470a3cdeeddc0de8fc78ec8886fccb375f950f"
   }
 }

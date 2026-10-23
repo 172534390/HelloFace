@@ -101,7 +101,7 @@ Search automatically opens and warms its database. Pause retains the slot, model
 | `search` | Exact Top-K with scope filters |
 | `releaseMemory`, `close` | Release gallery cache; close the handle |
 
-SQLite stores the original 450-byte Q7 payload and returns complete HF1 without re-quantization. Validate server features using `FaceFeatureFormat.FEATURE_SPACE_ID` (`hiface-feature-new-v1`) and `FaceSearchFeatureEntry`. Pagination offsets support `0..2147483647`, limits `1..1000`. Thresholds normalize to Core float32 precision.
+SQLite stores the original 450-byte Q7 payload and returns complete HF1 without re-quantization. Validate server features using `FaceFeatureFormat.FEATURE_SPACE_ID` (`jdx-feature-v1`) and `FaceSearchFeatureEntry`. Pagination offsets support `0..2147483647`, limits `1..1000`. Thresholds normalize to Core float32 precision.
 
 `close()` rejects new operations immediately and releases SQLite/cache after started work; queued work returns `CLOSED`. Await successful saving before closing. Search sessions own their own connections.
 
@@ -135,7 +135,3 @@ Check technical errors before reading the result. Android calls are synchronous 
 worker thread; iOS/Harmony calls use the bounded background queue. Input is owned/copied.
 This entry does not change the RGB camera liveness/search flows. iOS requires accessible
 IR image data; the SDK does not obtain the internal Face ID IR stream.
-
-FLIR's published 99.8% attack interception and 97.6% genuine acceptance are private-set
-publisher results, not this SDK's target-camera accuracy. Strong light and 3D heads are
-known limitations. Retain the FLIR MIT notice in the SDK license; HiFace licensing remains separate.

@@ -60,5 +60,4 @@ pixels, row stride, an IR-coordinate face box (x/y + width/height, at least 10x1
 and a device-calibrated real threshold. `real_score >= real_threshold` passes;
 check status before reading the result. Dimensions may be odd, up to 4096 per side.
 See `examples/infrared_liveness.c` for a complete consumer. This does not capture
-IR cameras, detect a face, or change the RGB liveness/search flows. FLIR's MIT
-notice is included in LICENSE. Validate actual IR hardware and attacks separately.
+IR cameras, detect a face, or change the RGB liveness/search flows. Validate actual IR hardware and attacks separately.

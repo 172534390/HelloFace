@@ -161,7 +161,3 @@ Check technical errors before reading the result. Android calls are synchronous 
 worker thread; iOS/Harmony calls use the bounded background queue. Input is owned/copied.
 This entry does not change the RGB camera liveness/search flows. iOS requires accessible
 IR image data; the SDK does not obtain the internal Face ID IR stream.
-
-FLIR's published 99.8% attack interception and 97.6% genuine acceptance are private-set
-publisher results, not this SDK's target-camera accuracy. Strong light and 3D heads are
-known limitations. Retain the FLIR MIT notice in the SDK license; HiFace licensing remains separate.

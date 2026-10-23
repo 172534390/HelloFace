@@ -64,4 +64,4 @@ JPEG/PNG 解码和摄像头适配见独立 Demo。
 目标摄像头标定的真人阈值。成功返回后，`real_score >= real_threshold` 才通过；失败不能放行。
 
 完整 C 消费示例为 `examples/infrared_liveness.c`。SDK 不管理 IR 摄像头采集、IR 人脸检测或补光，
-此入口不改变 RGB 相机活体和搜索流程。FLIR 的 MIT 许可包含在 LICENSE 中。
+此入口不改变 RGB 相机活体和搜索流程。
